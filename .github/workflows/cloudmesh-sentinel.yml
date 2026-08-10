@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "17 8 * * 1"
+    - cron: "17 8 * * *"
       timezone: "America/Detroit"
 
   push:
