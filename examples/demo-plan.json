@@ -1,0 +1,31 @@
+{
+  "resource_changes": [
+    {
+      "address": "google_compute_firewall.allow_ssh",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "source_ranges": ["0.0.0.0/0"],
+          "allow": [{"protocol": "tcp", "ports": ["22"]}]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket_iam_member.public_read",
+      "type": "google_storage_bucket_iam_member",
+      "change": {
+        "actions": ["create"],
+        "after": {"member": "allUsers"}
+      }
+    },
+    {
+      "address": "google_compute_instance.web",
+      "type": "google_compute_instance",
+      "change": {
+        "actions": ["delete", "create"],
+        "after": {"name": "web-server"}
+      }
+    }
+  ]
+}
