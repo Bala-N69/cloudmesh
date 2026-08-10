@@ -1,5 +1,3 @@
-# cloudmesh
-Cloud engineering lab focused on GCP, Terraform, Kubernetes, CI/CD automation, and DevSecOps practices.
 # CloudMesh Sentinel
 
 A lightweight Python CLI that scans Terraform plan JSON files for high-risk infrastructure changes before deployment.
@@ -40,19 +38,35 @@ CloudMesh Sentinel: 3 finding(s)
 python3 -m unittest discover -s tests -v
 ```
 
+## Kubernetes lab
+
+CloudMesh also includes a local-first Kubernetes baseline in
+[`kubernetes/`](kubernetes/). It uses Kustomize to separate reusable manifests
+from a development overlay and demonstrates namespace isolation, least-
+privilege container settings, NetworkPolicy, and resource limits.
+
+Rendering the manifests is local and free:
+
+```bash
+kubectl kustomize kubernetes/overlays/dev
+```
+
+See the [Kubernetes lab guide](kubernetes/README.md) for details.
+
 ## Project structure
 
 ```text
 cloudmesh/
 ├── cloudmesh_sentinel/   # Scanner source code
 ├── examples/             # Safe sample Terraform-plan input
+├── kubernetes/           # Secure local Kubernetes lab
 ├── tests/                # Automated security-rule tests
+├── .github/workflows/    # Continuous integration checks
 └── README.md
 ```
 
 ## Roadmap
 
-- Add GitHub Actions to run tests automatically
 - Support Markdown and JSON risk reports
 - Add configurable policy severity levels
 - Expand checks for GCP, AWS, and Azure Terraform resources

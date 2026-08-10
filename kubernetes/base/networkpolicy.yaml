@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloudmesh-demo-ingress
+  namespace: cloudmesh-dev
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cloudmesh-demo
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: cloudmesh
+      ports:
+        - protocol: TCP
+          port: http
