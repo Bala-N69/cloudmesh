@@ -19,6 +19,8 @@ The base applies a few deliberate security defaults:
 - A default-deny NetworkPolicy restricts ingress to explicitly selected
   CloudMesh pods.
 - CPU and memory requests/limits are set.
+- A startup probe gives the container up to one minute to become available
+  before readiness and liveness checks begin.
 
 ## Validate without a cluster
 
