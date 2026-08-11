@@ -36,3 +36,18 @@ jobs:
 
       - name: Run scanner demo
         run: python cloudmesh_sentinel/cli.py examples/demo-plan.json
+
+  kubernetes:
+    name: Validate Kubernetes manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up kubectl
+        uses: Azure/setup-kubectl@v4.0.1
+
+      - name: Render Kustomize development overlay
+        run: kubectl kustomize kubernetes/overlays/dev
