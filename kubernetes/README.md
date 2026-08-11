@@ -21,6 +21,8 @@ The base applies a few deliberate security defaults:
 - CPU and memory requests/limits are set.
 - A startup probe gives the container up to one minute to become available
   before readiness and liveness checks begin.
+- Rolling updates keep existing Pods available while one replacement Pod starts;
+  Kubernetes reports a stalled rollout after two minutes.
 
 ## Validate without a cluster
 
