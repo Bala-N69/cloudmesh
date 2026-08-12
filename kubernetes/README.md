@@ -23,6 +23,8 @@ The base applies a few deliberate security defaults:
   before readiness and liveness checks begin.
 - Rolling updates keep existing Pods available while one replacement Pod starts;
   Kubernetes reports a stalled rollout after two minutes.
+- A PodDisruptionBudget requires at least one healthy Pod during voluntary
+  disruptions such as a planned node drain.
 
 ## Validate without a cluster
 
