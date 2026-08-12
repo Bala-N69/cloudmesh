@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up kubectl
-        uses: Azure/setup-kubectl@v4.0.1
+        uses: Azure/setup-kubectl@v5.1.0
 
       - name: Render Kustomize development overlay
         run: kubectl kustomize kubernetes/overlays/dev
