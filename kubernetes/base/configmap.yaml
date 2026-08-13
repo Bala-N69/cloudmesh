@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudmesh-demo-nginx
+  namespace: cloudmesh-dev
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      server_name _;
+
+      location = /healthz {
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+      }
+
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+    }
