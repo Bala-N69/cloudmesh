@@ -17,7 +17,7 @@ The base applies a few deliberate security defaults:
 - The root filesystem is read-only; only the NGINX runtime directories are
   mounted as temporary writable volumes.
 - A default-deny NetworkPolicy restricts ingress to explicitly selected
-  CloudMesh pods.
+  CloudMesh pods and blocks all egress from this static demo application.
 - CPU and memory requests/limits are set.
 - A startup probe gives the container up to one minute to become available
   before readiness and liveness checks begin.
