@@ -24,7 +24,8 @@ The base applies a few deliberate security defaults:
 - Health probes call a dedicated `/healthz` endpoint that returns `ok`, rather
   than treating any successful page response as a health signal.
 - Rolling updates keep existing Pods available while one replacement Pod starts;
-  Kubernetes reports a stalled rollout after two minutes.
+  a replacement must remain healthy for 10 seconds before it is considered
+  available, and Kubernetes reports a stalled rollout after two minutes.
 - A PodDisruptionBudget requires at least one healthy Pod during voluntary
   disruptions such as a planned node drain.
 

@@ -9,6 +9,7 @@ metadata:
 spec:
   replicas: 2
   revisionHistoryLimit: 3
+  minReadySeconds: 10
   progressDeadlineSeconds: 120
   strategy:
     type: RollingUpdate
