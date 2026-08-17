@@ -26,6 +26,11 @@ The base applies a few deliberate security defaults:
 - Rolling updates keep existing Pods available while one replacement Pod starts;
   a replacement must remain healthy for 10 seconds before it is considered
   available, and Kubernetes reports a stalled rollout after two minutes.
+- Replicas are spread across nodes when capacity permits, avoiding a single-node
+  concentration without preventing a small development cluster from scheduling
+  the workload.
+- Pods have a 30-second termination grace period so NGINX can finish active
+  requests when a rollout or voluntary disruption removes a replica.
 - A PodDisruptionBudget requires at least one healthy Pod during voluntary
   disruptions such as a planned node drain.
 

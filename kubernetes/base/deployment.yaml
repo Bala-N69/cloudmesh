@@ -27,6 +27,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       serviceAccountName: cloudmesh-demo
+      terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
@@ -34,6 +35,13 @@ spec:
         fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cloudmesh-demo
       containers:
         - name: web
           image: nginxinc/nginx-unprivileged:1.27-alpine
