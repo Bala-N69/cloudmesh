@@ -19,6 +19,10 @@ The base applies a few deliberate security defaults:
 - A default-deny NetworkPolicy restricts ingress to explicitly selected
   CloudMesh pods and blocks all egress from this static demo application.
 - CPU and memory requests/limits are set.
+- A `LimitRange` supplies conservative CPU and memory defaults for any future
+  containers in the namespace, while a `ResourceQuota` bounds the small lab to
+  five Pods, 500m requested CPU, 512Mi requested memory, and 1 CPU/1Gi memory
+  in total limits.
 - A startup probe gives the container up to one minute to become available
   before readiness and liveness checks begin.
 - Health probes call a dedicated `/healthz` endpoint that returns `ok`, rather
