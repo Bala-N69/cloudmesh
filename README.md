@@ -7,7 +7,10 @@ CloudMesh Sentinel is designed for cloud and DevSecOps workflows where catching 
 ## What it detects
 
 - Public firewall rules, including public SSH or RDP access
+- Compute instances with public IP addresses
+- Cloud SQL instances that permit public IPv4 addresses
 - Public Google Cloud Storage IAM access
+- Cloud Storage buckets without uniform bucket-level access
 - Resources scheduled for deletion
 - Resources scheduled for replacement
 

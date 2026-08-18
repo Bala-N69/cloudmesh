@@ -35,10 +35,38 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                     (severity, address, "Firewall allows traffic from 0.0.0.0/0.")
                 )
 
+        if resource_type == "google_compute_instance":
+            has_public_ip = any(
+                interface.get("access_config")
+                for interface in after.get("network_interface", [])
+            )
+            if has_public_ip:
+                findings.append(
+                    ("HIGH", address, "Compute instance has a public IP address.")
+                )
+
         if resource_type.startswith("google_storage_bucket_iam_"):
             if after.get("member") in PUBLIC_MEMBERS:
                 findings.append(
                     ("HIGH", address, "Cloud Storage access is public.")
+                )
+
+        if resource_type == "google_storage_bucket":
+            if after.get("uniform_bucket_level_access") is False:
+                findings.append(
+                    (
+                        "MEDIUM",
+                        address,
+                        "Cloud Storage bucket does not use uniform bucket-level access.",
+                    )
+                )
+
+        if resource_type == "google_sql_database_instance":
+            settings = after.get("settings") or []
+            ip_configuration = settings[0].get("ip_configuration", []) if settings else []
+            if ip_configuration and ip_configuration[0].get("ipv4_enabled") is True:
+                findings.append(
+                    ("HIGH", address, "Cloud SQL instance permits a public IPv4 address.")
                 )
 
     return findings
