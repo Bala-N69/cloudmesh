@@ -49,6 +49,16 @@ kubectl kustomize kubernetes/overlays/dev
 This command only renders YAML; it does not create a cluster or deploy
 anything.
 
+To render the overlay and verify the key security defaults used in this lab:
+
+```bash
+bash scripts/validate-kubernetes.sh
+```
+
+The script checks that the rendered manifests retain the NetworkPolicy,
+non-root and read-only filesystem settings, rollout stability delay, and
+PodDisruptionBudget. It does not connect to or change a cluster.
+
 ## Apply to a local cluster later
 
 When a local Kubernetes cluster is available, apply the development overlay:

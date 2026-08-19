@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Render the development overlay and check the security defaults that the lab
+# is expected to demonstrate. This does not apply anything to a cluster.
+set -euo pipefail
+
+rendered_manifest="$(mktemp)"
+trap 'rm -f "$rendered_manifest"' EXIT
+
+kubectl kustomize kubernetes/overlays/dev > "$rendered_manifest"
+
+require_manifest_text() {
+  local expected="$1"
+
+  if ! grep -Fq "$expected" "$rendered_manifest"; then
+    echo "Kubernetes validation failed: missing $expected" >&2
+    exit 1
+  fi
+}
+
+require_manifest_text "kind: NetworkPolicy"
+require_manifest_text "runAsNonRoot: true"
+require_manifest_text "readOnlyRootFilesystem: true"
+require_manifest_text "minReadySeconds: 10"
+require_manifest_text "kind: PodDisruptionBudget"
+
+echo "Kubernetes manifest security checks passed."

@@ -49,5 +49,5 @@ jobs:
       - name: Set up kubectl
         uses: Azure/setup-kubectl@v5.1.0
 
-      - name: Render Kustomize development overlay
-        run: kubectl kustomize kubernetes/overlays/dev
+      - name: Validate Kustomize development overlay
+        run: bash scripts/validate-kubernetes.sh

@@ -54,6 +54,12 @@ Rendering the manifests is local and free:
 kubectl kustomize kubernetes/overlays/dev
 ```
 
+To also check the lab's key security defaults, run:
+
+```bash
+bash scripts/validate-kubernetes.sh
+```
+
 See the [Kubernetes lab guide](kubernetes/README.md) for details.
 
 ## Project structure
@@ -63,6 +69,7 @@ cloudmesh/
 ├── cloudmesh_sentinel/   # Scanner source code
 ├── examples/             # Safe sample Terraform-plan input
 ├── kubernetes/           # Secure local Kubernetes lab
+├── scripts/              # Local validation helpers
 ├── tests/                # Automated security-rule tests
 ├── .github/workflows/    # Continuous integration checks
 └── README.md
