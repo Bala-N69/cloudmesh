@@ -2,6 +2,9 @@ __pycache__/
 *.py[cod]
 .venv/git
 
+# macOS Finder metadata
+.DS_Store
+
 # Terraform local files and state
 .terraform/
 *.tfstate
