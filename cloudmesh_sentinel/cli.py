@@ -46,7 +46,8 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                 )
 
         if resource_type.startswith("google_storage_bucket_iam_"):
-            if after.get("member") in PUBLIC_MEMBERS:
+            members = {after.get("member"), *(after.get("members") or [])}
+            if PUBLIC_MEMBERS.intersection(members):
                 findings.append(
                     ("HIGH", address, "Cloud Storage access is public.")
                 )
@@ -67,6 +68,22 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
             if ip_configuration and ip_configuration[0].get("ipv4_enabled") is True:
                 findings.append(
                     ("HIGH", address, "Cloud SQL instance permits a public IPv4 address.")
+                )
+
+        if resource_type == "google_container_cluster":
+            master_networks = after.get("master_authorized_networks_config") or []
+            allows_anywhere = any(
+                cidr.get("cidr_block") == "0.0.0.0/0"
+                for configuration in master_networks
+                for cidr in configuration.get("cidr_blocks", [])
+            )
+            if allows_anywhere:
+                findings.append(
+                    (
+                        "HIGH",
+                        address,
+                        "GKE control plane allows access from 0.0.0.0/0.",
+                    )
                 )
 
     return findings

@@ -48,6 +48,29 @@ class TestTerraformRiskScanner(unittest.TestCase):
         self.assertEqual(findings[0][0], "HIGH")
         self.assertIn("Storage access is public", findings[0][2])
 
+    def test_flags_public_storage_binding_as_high_risk(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "google_storage_bucket_iam_binding.public_read",
+                    "type": "google_storage_bucket_iam_binding",
+                    "change": {
+                        "actions": ["create"],
+                        "after": {"members": ["allUsers"]},
+                    },
+                }
+            ]
+        }
+
+        self.assertIn(
+            (
+                "HIGH",
+                "google_storage_bucket_iam_binding.public_read",
+                "Cloud Storage access is public.",
+            ),
+            scan_plan(plan),
+        )
+
     def test_flags_compute_instance_with_public_ip(self):
         plan = {
             "resource_changes": [
@@ -113,6 +136,33 @@ class TestTerraformRiskScanner(unittest.TestCase):
                 "MEDIUM",
                 "google_storage_bucket.logs",
                 "Cloud Storage bucket does not use uniform bucket-level access.",
+            ),
+            scan_plan(plan),
+        )
+
+    def test_flags_gke_control_plane_open_to_the_internet(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "google_container_cluster.primary",
+                    "type": "google_container_cluster",
+                    "change": {
+                        "actions": ["create"],
+                        "after": {
+                            "master_authorized_networks_config": [
+                                {"cidr_blocks": [{"cidr_block": "0.0.0.0/0"}]}
+                            ],
+                        },
+                    },
+                }
+            ]
+        }
+
+        self.assertIn(
+            (
+                "HIGH",
+                "google_container_cluster.primary",
+                "GKE control plane allows access from 0.0.0.0/0.",
             ),
             scan_plan(plan),
         )
