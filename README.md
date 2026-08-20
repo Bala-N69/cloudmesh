@@ -11,6 +11,7 @@ CloudMesh Sentinel is designed for cloud and DevSecOps workflows where catching 
 - Cloud SQL instances that permit public IPv4 addresses
 - Public Google Cloud Storage IAM access
 - Cloud Storage buckets without uniform bucket-level access
+- GKE control planes that allow access from any IPv4 address
 - Resources scheduled for deletion
 - Resources scheduled for replacement
 
@@ -46,7 +47,8 @@ python3 -m unittest discover -s tests -v
 CloudMesh also includes a local-first Kubernetes baseline in
 [`kubernetes/`](kubernetes/). It uses Kustomize to separate reusable manifests
 from a development overlay and demonstrates namespace isolation, least-
-privilege container settings, NetworkPolicy, and resource limits.
+privilege container settings, NetworkPolicy, and resource limits, including
+bounded ephemeral storage for its writable runtime volumes.
 
 Rendering the manifests is local and free:
 
@@ -61,6 +63,10 @@ bash scripts/validate-kubernetes.sh
 ```
 
 See the [Kubernetes lab guide](kubernetes/README.md) for details.
+
+GitHub Actions also compiles the Python source, runs the scanner tests, validates
+the rendered Kubernetes security defaults, and performs CodeQL analysis on the
+Python code before changes are merged.
 
 ## Project structure
 

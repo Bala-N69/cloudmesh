@@ -58,9 +58,11 @@ spec:
           resources:
             requests:
               cpu: 50m
+              ephemeral-storage: 128Mi
               memory: 64Mi
             limits:
               cpu: 200m
+              ephemeral-storage: 256Mi
               memory: 128Mi
           startupProbe:
             httpGet:
@@ -92,11 +94,14 @@ spec:
               subPath: default.conf
       volumes:
         - name: nginx-cache
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 64Mi
         - name: nginx-run
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 16Mi
         - name: tmp
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 32Mi
         - name: nginx-config
           configMap:
             name: cloudmesh-demo-nginx

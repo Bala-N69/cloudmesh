@@ -19,6 +19,9 @@ The base applies a few deliberate security defaults:
 - A default-deny NetworkPolicy restricts ingress to explicitly selected
   CloudMesh pods and blocks all egress from this static demo application.
 - CPU and memory requests/limits are set.
+- Ephemeral-storage requests and limits are set, and each writable NGINX
+  runtime volume has a size cap to prevent temporary files from exhausting a
+  node's local disk.
 - A `LimitRange` supplies conservative CPU and memory defaults for any future
   containers in the namespace, while a `ResourceQuota` bounds the small lab to
   five Pods, 500m requested CPU, 512Mi requested memory, and 1 CPU/1Gi memory
