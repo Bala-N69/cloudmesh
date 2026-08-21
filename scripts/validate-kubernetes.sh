@@ -19,6 +19,7 @@ require_manifest_text() {
 }
 
 require_manifest_text "kind: NetworkPolicy"
+require_manifest_text "automountServiceAccountToken: false"
 require_manifest_text "runAsNonRoot: true"
 require_manifest_text "readOnlyRootFilesystem: true"
 require_manifest_text "minReadySeconds: 10"
