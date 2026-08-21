@@ -13,6 +13,8 @@ account.
 The base applies a few deliberate security defaults:
 
 - The container runs as an unprivileged user.
+- Service-account tokens are not mounted into Pods because this static demo
+  does not need Kubernetes API access.
 - Privilege escalation is disabled and Linux capabilities are dropped.
 - The root filesystem is read-only; only the NGINX runtime directories are
   mounted as temporary writable volumes.
@@ -59,8 +61,9 @@ bash scripts/validate-kubernetes.sh
 ```
 
 The script checks that the rendered manifests retain the NetworkPolicy,
-non-root and read-only filesystem settings, rollout stability delay, and
-PodDisruptionBudget. It does not connect to or change a cluster.
+disabled service-account token mounting, non-root and read-only filesystem
+settings, rollout stability delay, and PodDisruptionBudget. It does not
+connect to or change a cluster.
 
 ## Apply to a local cluster later
 
