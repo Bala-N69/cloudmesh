@@ -4,6 +4,7 @@ from pathlib import Path
 
 PUBLIC_MEMBERS = {"allUsers", "allAuthenticatedUsers"}
 ADMIN_PORTS = {"22", "3389"}
+PRIVILEGED_PROJECT_ROLES = {"roles/owner", "roles/editor"}
 
 
 def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
@@ -50,6 +51,26 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
             if PUBLIC_MEMBERS.intersection(members):
                 findings.append(
                     ("HIGH", address, "Cloud Storage access is public.")
+                )
+
+        if resource_type in {
+            "google_project_iam_member",
+            "google_project_iam_binding",
+        }:
+            members = {after.get("member"), *(after.get("members") or [])}
+            role = after.get("role")
+            has_service_account = any(
+                isinstance(member, str) and member.startswith("serviceAccount:")
+                for member in members
+            )
+
+            if role in PRIVILEGED_PROJECT_ROLES and has_service_account:
+                findings.append(
+                    (
+                        "HIGH",
+                        address,
+                        "Service account receives a privileged project IAM role.",
+                    )
                 )
 
         if resource_type == "google_storage_bucket":

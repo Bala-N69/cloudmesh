@@ -71,6 +71,51 @@ class TestTerraformRiskScanner(unittest.TestCase):
             scan_plan(plan),
         )
 
+    def test_flags_service_account_with_privileged_project_role(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "google_project_iam_member.deployer_owner",
+                    "type": "google_project_iam_member",
+                    "change": {
+                        "actions": ["create"],
+                        "after": {
+                            "member": "serviceAccount:deployer@example.iam.gserviceaccount.com",
+                            "role": "roles/owner",
+                        },
+                    },
+                }
+            ]
+        }
+
+        self.assertIn(
+            (
+                "HIGH",
+                "google_project_iam_member.deployer_owner",
+                "Service account receives a privileged project IAM role.",
+            ),
+            scan_plan(plan),
+        )
+
+    def test_allows_service_account_with_least_privilege_project_role(self):
+        plan = {
+            "resource_changes": [
+                {
+                    "address": "google_project_iam_member.viewer",
+                    "type": "google_project_iam_member",
+                    "change": {
+                        "actions": ["create"],
+                        "after": {
+                            "member": "serviceAccount:viewer@example.iam.gserviceaccount.com",
+                            "role": "roles/viewer",
+                        },
+                    },
+                }
+            ]
+        }
+
+        self.assertEqual(scan_plan(plan), [])
+
     def test_flags_compute_instance_with_public_ip(self):
         plan = {
             "resource_changes": [
