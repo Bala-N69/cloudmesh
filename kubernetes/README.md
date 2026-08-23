@@ -13,6 +13,8 @@ account.
 The base applies a few deliberate security defaults:
 
 - The container runs as an unprivileged user.
+- The namespace requests the `restricted` Pod Security Standard, so clusters
+  with Pod Security Admission enabled reject non-compliant Pods.
 - Pods use a dedicated service account, with token mounting disabled because
   this static demo does not need Kubernetes API access.
 - Privilege escalation is disabled and Linux capabilities are dropped.
@@ -61,9 +63,10 @@ bash scripts/validate-kubernetes.sh
 ```
 
 The script checks that the rendered manifests retain the NetworkPolicy,
-dedicated service account with token mounting disabled, non-root and read-only
-filesystem settings, default-deny egress behavior, rollout stability delay,
-and PodDisruptionBudget. It does not connect to or change a cluster.
+restricted Pod Security enforcement, dedicated service account with token
+mounting disabled, non-root and read-only filesystem settings, default-deny
+egress behavior, rollout stability delay, and PodDisruptionBudget. It does not
+connect to or change a cluster.
 
 ## Apply to a local cluster later
 
