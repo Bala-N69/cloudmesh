@@ -12,13 +12,24 @@ kubectl kustomize kubernetes/overlays/dev > "$rendered_manifest"
 require_manifest_text() {
   local expected="$1"
 
-  if ! grep -Fq "$expected" "$rendered_manifest"; then
+  if ! grep -Fq -- "$expected" "$rendered_manifest"; then
     echo "Kubernetes validation failed: missing $expected" >&2
     exit 1
   fi
 }
 
+forbid_manifest_text() {
+  local unexpected="$1"
+
+  if grep -Fq -- "$unexpected" "$rendered_manifest"; then
+    echo "Kubernetes validation failed: unexpected $unexpected" >&2
+    exit 1
+  fi
+}
+
 require_manifest_text "kind: NetworkPolicy"
+require_manifest_text "- Egress"
+forbid_manifest_text "egress:"
 require_manifest_text "serviceAccountName: cloudmesh-demo"
 require_manifest_text "automountServiceAccountToken: false"
 require_manifest_text "runAsNonRoot: true"
