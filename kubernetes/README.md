@@ -66,8 +66,8 @@ The script checks that the rendered manifests retain the NetworkPolicy,
 restricted Pod Security enforcement, dedicated service account with token
 mounting disabled, non-root and read-only filesystem settings, default-deny
 egress behavior, privilege-escalation and capability restrictions, rollout
-stability delay, and PodDisruptionBudget. It does not connect to or change a
-cluster.
+stability delay, CPU and memory resource bounds, and PodDisruptionBudget. It
+does not connect to or change a cluster.
 
 ## Apply to a local cluster later
 
