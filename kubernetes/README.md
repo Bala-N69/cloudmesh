@@ -13,6 +13,8 @@ account.
 The base applies a few deliberate security defaults:
 
 - The container runs as an unprivileged user.
+- Pods use the `RuntimeDefault` seccomp profile, which applies the container
+  runtime's default system-call filtering.
 - The namespace requests the `restricted` Pod Security Standard, so clusters
   with Pod Security Admission enabled reject non-compliant Pods.
 - Pods use a dedicated service account, with token mounting disabled because
@@ -68,9 +70,9 @@ The script checks that the rendered manifests retain the NetworkPolicy,
 restricted Pod Security enforcement, dedicated service account with token
 mounting disabled, non-root and read-only filesystem settings, default-deny
 egress behavior, privilege-escalation and capability restrictions, rollout
-stability and availability settings, internal-only service exposure, CPU and
-memory resource bounds, and PodDisruptionBudget. It does not connect to or
-change a cluster.
+stability and availability settings, internal-only service exposure,
+`RuntimeDefault` seccomp, CPU and memory resource bounds, and
+PodDisruptionBudget. It does not connect to or change a cluster.
 
 ## Apply to a local cluster later
 
