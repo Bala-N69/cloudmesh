@@ -22,6 +22,8 @@ The base applies a few deliberate security defaults:
   mounted as temporary writable volumes.
 - A default-deny NetworkPolicy restricts ingress to explicitly selected
   CloudMesh pods and blocks all egress from this static demo application.
+- The Service uses `ClusterIP`, keeping the demo reachable only from within the
+  cluster unless an explicit exposure method is added later.
 - CPU and memory requests/limits are set.
 - Ephemeral-storage requests and limits are set, and each writable NGINX
   runtime volume has a size cap to prevent temporary files from exhausting a
@@ -66,8 +68,9 @@ The script checks that the rendered manifests retain the NetworkPolicy,
 restricted Pod Security enforcement, dedicated service account with token
 mounting disabled, non-root and read-only filesystem settings, default-deny
 egress behavior, privilege-escalation and capability restrictions, rollout
-stability and availability settings, CPU and memory resource bounds, and
-PodDisruptionBudget. It does not connect to or change a cluster.
+stability and availability settings, internal-only service exposure, CPU and
+memory resource bounds, and PodDisruptionBudget. It does not connect to or
+change a cluster.
 
 ## Apply to a local cluster later
 

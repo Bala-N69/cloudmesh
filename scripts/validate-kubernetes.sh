@@ -28,6 +28,8 @@ forbid_manifest_text() {
 }
 
 require_manifest_text "kind: NetworkPolicy"
+require_manifest_text "kind: Service"
+require_manifest_text "type: ClusterIP"
 require_manifest_text "- Egress"
 forbid_manifest_text "egress:"
 require_manifest_text "pod-security.kubernetes.io/enforce: restricted"
