@@ -37,7 +37,9 @@ The base applies a few deliberate security defaults:
 - A startup probe gives the container up to one minute to become available
   before readiness and liveness checks begin.
 - Health probes call a dedicated `/healthz` endpoint that returns `ok`, rather
-  than treating any successful page response as a health signal.
+  than treating any successful page response as a health signal. Readiness and
+  liveness probes time out after two seconds and mark the container unhealthy
+  after three failed checks.
 - Rolling updates keep existing Pods available while one replacement Pod starts;
   a replacement must remain healthy for 10 seconds before it is considered
   available, and Kubernetes reports a stalled rollout after two minutes.
@@ -71,7 +73,8 @@ restricted Pod Security enforcement, dedicated service account with token
 mounting disabled, non-root and read-only filesystem settings, default-deny
 egress behavior, privilege-escalation and capability restrictions, rollout
 stability and availability settings, internal-only service exposure,
-`RuntimeDefault` seccomp, CPU and memory resource bounds, and
+`RuntimeDefault` seccomp, health-probe timeouts and failure thresholds, CPU and
+memory resource bounds, and
 PodDisruptionBudget. It does not connect to or change a cluster.
 
 ## Apply to a local cluster later
