@@ -56,5 +56,7 @@ require_manifest_text "cpu: 200m"
 require_manifest_text "memory: 128Mi"
 require_manifest_text "ephemeral-storage: 128Mi"
 require_manifest_text "sizeLimit: 64Mi"
+require_manifest_text "sizeLimit: 16Mi"
+require_manifest_text "sizeLimit: 32Mi"
 
 echo "Kubernetes manifest security checks passed."

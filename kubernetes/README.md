@@ -74,7 +74,7 @@ mounting disabled, non-root and read-only filesystem settings, default-deny
 egress behavior, privilege-escalation and capability restrictions, rollout
 stability and availability settings, internal-only service exposure,
 `RuntimeDefault` seccomp, health-probe timeouts and failure thresholds, CPU and
-memory resource bounds, and
+memory resource bounds, all writable-volume size caps, and
 PodDisruptionBudget. It does not connect to or change a cluster.
 
 ## Apply to a local cluster later
