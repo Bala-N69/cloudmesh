@@ -65,9 +65,10 @@ bash scripts/validate-kubernetes.sh
 
 See the [Kubernetes lab guide](kubernetes/README.md) for details.
 
-GitHub Actions also compiles the Python source, runs the scanner tests, validates
-the rendered Kubernetes security defaults, and performs CodeQL analysis on the
-Python code before changes are merged.
+GitHub Actions also compiles the Python source, runs the scanner tests, verifies
+the demo plan reports its expected high-risk findings, validates the rendered
+Kubernetes security defaults, and performs CodeQL analysis on the Python code
+before changes are merged.
 
 ## Project structure
 
