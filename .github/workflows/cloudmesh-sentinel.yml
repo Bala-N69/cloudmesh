@@ -40,6 +40,15 @@ jobs:
       - name: Run scanner demo
         run: python cloudmesh_sentinel/cli.py examples/demo-plan.json
 
+      - name: Verify scanner demo findings
+        run: |
+          demo_output="$(python cloudmesh_sentinel/cli.py examples/demo-plan.json)"
+          printf '%s\n' "$demo_output"
+          grep -Fq "CloudMesh Sentinel: 3 finding(s)" <<< "$demo_output"
+          grep -Fq "[HIGH] google_compute_firewall.allow_ssh" <<< "$demo_output"
+          grep -Fq "[HIGH] google_storage_bucket_iam_member.public_read" <<< "$demo_output"
+          grep -Fq "[HIGH] google_compute_instance.web" <<< "$demo_output"
+
   kubernetes:
     name: Validate Kubernetes manifests
     runs-on: ubuntu-latest
