@@ -13,6 +13,8 @@ account.
 The base applies a few deliberate security defaults:
 
 - The container runs as an unprivileged user.
+- The workload uses a deliberately versioned `nginx-unprivileged` image rather
+  than a floating `latest` tag, and validation prevents accidental image drift.
 - Pods use the `RuntimeDefault` seccomp profile, which applies the container
   runtime's default system-call filtering.
 - The namespace requests the `restricted` Pod Security Standard, so clusters
@@ -74,7 +76,8 @@ mounting disabled, non-root and read-only filesystem settings, default-deny
 egress behavior, privilege-escalation and capability restrictions, rollout
 stability and availability settings, internal-only service exposure,
 `RuntimeDefault` seccomp, health-probe timeouts and failure thresholds, CPU and
-memory resource bounds, all writable-volume size caps, and
+memory resource bounds, all writable-volume size caps, the approved container
+image, and
 PodDisruptionBudget. It does not connect to or change a cluster.
 
 ## Apply to a local cluster later
