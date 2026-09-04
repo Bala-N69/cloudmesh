@@ -77,7 +77,7 @@ egress behavior, privilege-escalation and capability restrictions, rollout
 stability and availability settings, internal-only service exposure,
 `RuntimeDefault` seccomp, health-probe timeouts and failure thresholds, CPU and
 memory resource bounds, all writable-volume size caps, the approved container
-image, and
+image, a 30-second termination grace period, and
 PodDisruptionBudget. It does not connect to or change a cluster.
 
 ## Apply to a local cluster later
