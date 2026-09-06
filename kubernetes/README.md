@@ -8,7 +8,8 @@ account.
 ## Layout
 
 - `base/` contains the reusable application manifests.
-- `overlays/dev/` creates a small development variant with one replica.
+- `overlays/dev/` creates a small development variant with one replica; CI
+  validates that this lightweight setting is retained.
 
 The base applies a few deliberate security defaults:
 
@@ -73,7 +74,7 @@ bash scripts/validate-kubernetes.sh
 The script checks that the rendered manifests retain the NetworkPolicy,
 restricted Pod Security enforcement, dedicated service account with token
 mounting disabled, non-root and read-only filesystem settings, default-deny
-egress behavior, privilege-escalation and capability restrictions, rollout
+egress behavior, the one-replica development overlay, privilege-escalation and capability restrictions, rollout
 stability and availability settings, internal-only service exposure,
 `RuntimeDefault` seccomp, health-probe timeouts and failure thresholds, CPU and
 memory resource bounds, all writable-volume size caps, the approved container
