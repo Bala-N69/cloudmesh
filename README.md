@@ -43,6 +43,15 @@ CloudMesh Sentinel: 3 finding(s)
 python3 -m unittest discover -s tests -v
 ```
 
+## Try a safe plan
+
+The repository also includes a plan with internal HTTPS access and uniform
+Cloud Storage access. It should return zero findings:
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/safe-plan.json
+```
+
 ## Kubernetes lab
 
 CloudMesh also includes a local-first Kubernetes baseline in
@@ -66,9 +75,9 @@ bash scripts/validate-kubernetes.sh
 See the [Kubernetes lab guide](kubernetes/README.md) for details.
 
 GitHub Actions also compiles the Python source, runs the scanner tests, verifies
-the demo plan reports its expected high-risk findings, validates the rendered
-Kubernetes security defaults, and performs CodeQL analysis on the Python code
-before changes are merged.
+the risky demo plan reports its expected high-risk findings, confirms the safe
+plan returns zero findings, validates the rendered Kubernetes security defaults,
+and performs CodeQL analysis on the Python code before changes are merged.
 
 Dependabot reviews GitHub Actions updates weekly and opens up to three grouped
 pull requests for review. This keeps the CI toolchain current without directly
@@ -79,7 +88,7 @@ changing `main`.
 ```text
 cloudmesh/
 ├── cloudmesh_sentinel/   # Scanner source code
-├── examples/             # Safe sample Terraform-plan input
+├── examples/             # Sample Terraform-plan inputs
 ├── kubernetes/           # Secure local Kubernetes lab
 ├── scripts/              # Local validation helpers
 ├── tests/                # Automated security-rule tests
