@@ -25,6 +25,8 @@ The base applies a few deliberate security defaults:
 - Privilege escalation is disabled and Linux capabilities are dropped.
 - The root filesystem is read-only; only the NGINX runtime directories are
   mounted as temporary writable volumes.
+- The NGINX configuration adds `nosniff`, `DENY` framing, and no-referrer
+  response headers for the static demo endpoint.
 - A default-deny NetworkPolicy restricts ingress to explicitly selected
   CloudMesh pods and blocks all egress from this static demo application.
 - The Service uses `ClusterIP`, keeping the demo reachable only from within the
@@ -78,7 +80,7 @@ egress behavior, the one-replica development overlay, privilege-escalation and c
 stability and availability settings, internal-only service exposure,
 `RuntimeDefault` seccomp, health-probe timeouts and failure thresholds, CPU and
 memory resource bounds, all writable-volume size caps, the approved container
-image, a 30-second termination grace period, and
+image, response-security headers, a 30-second termination grace period, and
 PodDisruptionBudget. It does not connect to or change a cluster.
 
 ## Apply to a local cluster later
