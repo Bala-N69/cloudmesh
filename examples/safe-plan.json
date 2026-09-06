@@ -1,0 +1,23 @@
+{
+  "resource_changes": [
+    {
+      "address": "google_compute_firewall.allow_https_internal",
+      "type": "google_compute_firewall",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "source_ranges": ["10.0.0.0/8"],
+          "allow": [{"protocol": "tcp", "ports": ["443"]}]
+        }
+      }
+    },
+    {
+      "address": "google_storage_bucket.logs",
+      "type": "google_storage_bucket",
+      "change": {
+        "actions": ["create"],
+        "after": {"uniform_bucket_level_access": true}
+      }
+    }
+  ]
+}

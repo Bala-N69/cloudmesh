@@ -49,6 +49,12 @@ jobs:
           grep -Fq "[HIGH] google_storage_bucket_iam_member.public_read" <<< "$demo_output"
           grep -Fq "[HIGH] google_compute_instance.web" <<< "$demo_output"
 
+      - name: Verify scanner safe plan
+        run: |
+          safe_output="$(python cloudmesh_sentinel/cli.py examples/safe-plan.json)"
+          printf '%s\n' "$safe_output"
+          grep -Fq "CloudMesh Sentinel: 0 finding(s)" <<< "$safe_output"
+
   kubernetes:
     name: Validate Kubernetes manifests
     runs-on: ubuntu-latest
