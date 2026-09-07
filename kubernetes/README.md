@@ -40,11 +40,12 @@ The base applies a few deliberate security defaults:
   five Pods, 500m requested CPU, 512Mi requested memory, and 1 CPU/1Gi memory
   in total limits.
 - A startup probe gives the container up to one minute to become available
-  before readiness and liveness checks begin.
+  before readiness and liveness checks begin, with a two-second timeout for
+  each probe attempt.
 - Health probes call a dedicated `/healthz` endpoint that returns `ok`, rather
-  than treating any successful page response as a health signal. Readiness and
-  liveness probes time out after two seconds and mark the container unhealthy
-  after three failed checks.
+  than treating any successful page response as a health signal. All probes
+  time out after two seconds; readiness and liveness mark the container
+  unhealthy after three failed checks.
 - Rolling updates keep existing Pods available while one replacement Pod starts;
   a replacement must remain healthy for 10 seconds before it is considered
   available, and Kubernetes reports a stalled rollout after two minutes.
