@@ -74,6 +74,11 @@ To render the overlay and verify the key security defaults used in this lab:
 bash scripts/validate-kubernetes.sh
 ```
 
+Run this command from the repository root. It requires `kubectl` on your
+`PATH`; if it is missing, the script exits with a clear prerequisite message
+before creating temporary files. You can also use the GitHub Actions
+Kubernetes validation job, which sets up `kubectl` for the runner.
+
 The script checks that the rendered manifests retain the NetworkPolicy,
 restricted Pod Security enforcement, dedicated service account with token
 mounting disabled, non-root and read-only filesystem settings, default-deny
