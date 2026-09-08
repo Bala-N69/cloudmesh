@@ -4,6 +4,11 @@
 # is expected to demonstrate. This does not apply anything to a cluster.
 set -euo pipefail
 
+if ! command -v kubectl >/dev/null 2>&1; then
+  echo "Kubernetes validation requires kubectl on PATH. Install kubectl or use the GitHub Actions Kubernetes validation job." >&2
+  exit 1
+fi
+
 rendered_manifest="$(mktemp)"
 trap 'rm -f "$rendered_manifest"' EXIT
 
