@@ -74,7 +74,12 @@ To render the overlay and verify the key security defaults used in this lab:
 bash scripts/validate-kubernetes.sh
 ```
 
-Run this command from the repository root. It requires `kubectl` on your
+The command above uses a path relative to the repository root. From another
+folder, pass the script's absolute path to `bash`; the script locates the
+development overlay relative to its own location. For example, from this
+`kubernetes/` folder, run `bash ../scripts/validate-kubernetes.sh`.
+
+It requires `kubectl` on your
 `PATH`; if it is missing, the script exits with a clear prerequisite message
 before creating temporary files. You can also use the GitHub Actions
 Kubernetes validation job, which sets up `kubectl` for the runner.
