@@ -6,7 +6,7 @@ CloudMesh Sentinel is designed for cloud and DevSecOps workflows where catching 
 
 ## What it detects
 
-- Public firewall rules, including public SSH or RDP access
+- Public IPv4/IPv6 ingress firewall rules, including SSH/RDP port ranges and unrestricted TCP
 - Compute instances with public IP addresses
 - Cloud SQL instances that permit public IPv4 addresses
 - Public Google Cloud Storage IAM access
@@ -52,6 +52,24 @@ Cloud Storage access. It should return zero findings:
 python3 cloudmesh_sentinel/cli.py examples/safe-plan.json
 ```
 
+## GCP plan reports and CI gates
+
+Inspect three GCP network risks without credentials or a cloud project:
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/gcp-network-risk-plan.json --format json
+python3 cloudmesh_sentinel/cli.py examples/safe-plan.json --fail-on medium
+```
+
+Use `--fail-on high` to reject HIGH findings or `--fail-on medium` to reject
+MEDIUM and HIGH findings. Exit codes are 0 for a completed scan below the
+threshold, 1 for a policy failure, and 2 for input/usage errors. The default
+remains informational, even when findings are present. JSON reports include
+a schema version, severity counts, resource addresses, and messages.
+
+See the [GCP plan lab](terraform/README.md) for examples and detection limits.
+Zero findings means no implemented rule matched; it is not proof of security.
+
 ## Kubernetes lab
 
 CloudMesh also includes a local-first Kubernetes baseline in
@@ -94,8 +112,7 @@ cloudmesh/
 
 ## Roadmap
 
-- Support Markdown and JSON risk reports
-- Add configurable policy severity levels
+- Support Markdown risk reports
 - Expand checks for GCP, AWS, and Azure Terraform resources
 
 ## Security note

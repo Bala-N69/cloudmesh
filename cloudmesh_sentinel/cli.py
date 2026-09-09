@@ -1,10 +1,51 @@
 import argparse
 import json
+import sys
+from ipaddress import ip_network
 from pathlib import Path
 
 PUBLIC_MEMBERS = {"allUsers", "allAuthenticatedUsers"}
 ADMIN_PORTS = {"22", "3389"}
 PRIVILEGED_PROJECT_ROLES = {"roles/owner", "roles/editor"}
+SEVERITY_RANK = {"MEDIUM": 1, "HIGH": 2}
+
+
+def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, str]]:
+    """Inspect explicit public ingress ranges; unknown sources are not inferred."""
+    rules = after.get("allow") or []
+    if after.get("disabled") or after.get("direction") == "EGRESS" or not rules:
+        return []
+    public_ranges = set()
+    for source in after.get("source_ranges") or []:
+        try:
+            network = ip_network(source, strict=False)
+        except (ValueError, TypeError):
+            continue
+        if network.prefixlen == 0:
+            public_ranges.add(str(network))
+
+    allows_admin = False
+    for rule in rules:
+        # Older synthetic examples omit protocol; preserve their TCP behavior.
+        protocol = str(rule.get("protocol", "tcp")).lower()
+        if protocol == "all":
+            allows_admin = True
+        elif protocol in {"tcp", "6"}:
+            ports = rule.get("ports") or []
+            if not ports:
+                allows_admin = True
+            for value in ports:
+                bounds = str(value).split("-")
+                try:
+                    start = int(bounds[0])
+                    end = int(bounds[-1])
+                except ValueError:
+                    continue
+                if len(bounds) <= 2 and any(start <= int(port) <= end for port in ADMIN_PORTS):
+                    allows_admin = True
+    severity = "HIGH" if allows_admin else "MEDIUM"
+    return [(severity, address, f"Firewall allows traffic from {source}.")
+            for source in sorted(public_ranges)]
 
 
 def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
@@ -24,17 +65,7 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
             findings.append(("HIGH", address, "Resource will be replaced."))
 
         if resource_type == "google_compute_firewall":
-            is_public = "0.0.0.0/0" in after.get("source_ranges", [])
-            allows_admin = any(
-                ADMIN_PORTS.intersection(rule.get("ports", []))
-                for rule in after.get("allow", [])
-            )
-
-            if is_public:
-                severity = "HIGH" if allows_admin else "MEDIUM"
-                findings.append(
-                    (severity, address, "Firewall allows traffic from 0.0.0.0/0.")
-                )
+            findings.extend(public_firewall_findings(after, address))
 
         if resource_type == "google_compute_instance":
             has_public_ip = any(
@@ -110,22 +141,45 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
     return findings
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scan a Terraform plan JSON file for infrastructure risks."
     )
     parser.add_argument("plan", type=Path, help="Path to Terraform plan JSON")
+    parser.add_argument("--format", choices=("text", "json"), default="text")
+    parser.add_argument("--fail-on", choices=("none", "medium", "high"), default="none",
+                        help="Exit 1 for findings at or above this severity (default: none)")
     args = parser.parse_args()
 
-    with args.plan.open(encoding="utf-8") as file:
-        findings = scan_plan(json.load(file))
+    try:
+        with args.plan.open(encoding="utf-8") as file:
+            plan = json.load(file)
+        if not isinstance(plan, dict) or not isinstance(plan.get("resource_changes", []), list):
+            raise ValueError("Expected a plan object with a resource_changes list")
+        findings = scan_plan(plan)
+    except (OSError, ValueError, TypeError, AttributeError, KeyError) as error:
+        print(f"CloudMesh Sentinel: unable to scan plan: {error}", file=sys.stderr)
+        return 2
 
-    print(f"CloudMesh Sentinel: {len(findings)} finding(s)\n")
+    if args.format == "json":
+        print(json.dumps({
+            "schema_version": 1,
+            "summary": {"total": len(findings), **{
+                level: sum(severity == level for severity, _, _ in findings)
+                for level in SEVERITY_RANK}},
+            "findings": [{"severity": severity, "address": address, "message": message}
+                         for severity, address, message in findings],
+        }, indent=2))
+    else:
+        print(f"CloudMesh Sentinel: {len(findings)} finding(s)\n")
+        for severity, address, message in findings:
+            print(f"[{severity}] {address}")
+            print(f"  {message}\n")
 
-    for severity, address, message in findings:
-        print(f"[{severity}] {address}")
-        print(f"  {message}\n")
+    return int(args.fail_on != "none" and any(
+        SEVERITY_RANK[severity] >= SEVERITY_RANK[args.fail_on.upper()]
+        for severity, _, _ in findings))
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -55,6 +55,13 @@ jobs:
           printf '%s\n' "$safe_output"
           grep -Fq "CloudMesh Sentinel: 0 finding(s)" <<< "$safe_output"
 
+      - name: Enforce GCP plan severity gate
+        run: |
+          python cloudmesh_sentinel/cli.py examples/safe-plan.json --format json --fail-on medium
+          status=0
+          python cloudmesh_sentinel/cli.py examples/gcp-network-risk-plan.json --format json --fail-on high || status=$?
+          test "$status" -eq 1
+
   kubernetes:
     name: Validate Kubernetes manifests
     runs-on: ubuntu-latest

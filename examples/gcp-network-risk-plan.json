@@ -1,0 +1,25 @@
+{
+  "resource_changes": [
+    {
+      "address": "google_compute_firewall.ipv6_ssh",
+      "type": "google_compute_firewall",
+      "change": {"actions": ["create"], "after": {
+        "source_ranges": ["::/0"], "allow": [{"protocol": "tcp", "ports": ["22"]}]
+      }}
+    },
+    {
+      "address": "google_compute_firewall.admin_range",
+      "type": "google_compute_firewall",
+      "change": {"actions": ["create"], "after": {
+        "source_ranges": ["0.0.0.0/0"], "allow": [{"protocol": "tcp", "ports": ["3300-3400"]}]
+      }}
+    },
+    {
+      "address": "google_compute_firewall.all_tcp",
+      "type": "google_compute_firewall",
+      "change": {"actions": ["create"], "after": {
+        "source_ranges": ["0.0.0.0/0"], "allow": [{"protocol": "tcp"}]
+      }}
+    }
+  ]
+}
