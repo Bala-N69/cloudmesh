@@ -9,10 +9,12 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
 rendered_manifest="$(mktemp)"
 trap 'rm -f "$rendered_manifest"' EXIT
 
-kubectl kustomize kubernetes/overlays/dev > "$rendered_manifest"
+kubectl kustomize "$repo_root/kubernetes/overlays/dev" > "$rendered_manifest"
 
 require_manifest_text() {
   local expected="$1"
