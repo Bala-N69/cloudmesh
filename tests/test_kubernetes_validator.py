@@ -1,0 +1,79 @@
+"""Exercise shell guardrails with controlled output, without a cluster or kubectl.
+
+The fixture combines base resources with the dev replica count. It is not a
+Kustomize renderer: the existing Kubernetes CI job covers actual rendering.
+"""
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts/validate-kubernetes.sh"
+
+
+class TestKubernetesValidator(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        resources = sorted((ROOT / "kubernetes/base").glob("*.yaml"))
+        cls.manifest = "\n---\n".join(
+            path.read_text() for path in resources if path.name != "kustomization.yaml"
+        ).replace("replicas: 2", "replicas: 1")
+
+    def validate(self, manifest):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Path(directory) / "manifest.yaml"
+            fixture.write_text(manifest)
+            environment = dict(os.environ, CLOUDMESH_TEST_MANIFEST=str(fixture))
+            # Exported function substitutes only the renderer; the real shell
+            # script, normalization and guardrail checks run unchanged.
+            return subprocess.run(
+                ["bash", "-c", 'kubectl() { cat "$CLOUDMESH_TEST_MANIFEST"; }; '
+                 'export -f kubectl; bash "$1"', "validator-test", str(SCRIPT)],
+                env=environment, cwd=directory, text=True, capture_output=True,
+                timeout=15,
+            )
+
+    def test_expected_manifest_passes(self):
+        result = self.validate(self.manifest)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_whitespace_is_not_significant(self):
+        padded = "\n".join("  " + line + "  " for line in self.manifest.splitlines())
+        result = self.validate(padded)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_partial_values_are_rejected(self):
+        for expected, changed in [
+            ("replicas: 1", "replicas: 10"),
+            ("kind: Service", "kind: ServiceAccount"),
+            ("serviceAccountName: cloudmesh-demo", "serviceAccountName: cloudmesh-demo-admin"),
+            ("image: nginxinc/nginx-unprivileged:1.27-alpine",
+             "image: nginxinc/nginx-unprivileged:1.27-alpine-unapproved"),
+            ("terminationGracePeriodSeconds: 30", "terminationGracePeriodSeconds: 300"),
+        ]:
+            with self.subTest(changed=changed):
+                result = self.validate(self.manifest.replace(expected, changed))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("missing " + expected, result.stderr)
+
+    def test_commented_setting_does_not_pass(self):
+        result = self.validate(self.manifest.replace("replicas: 1", "# replicas: 1"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_commented_header_does_not_pass(self):
+        result = self.validate(self.manifest.replace(
+            'add_header X-Frame-Options "DENY" always;',
+            '# add_header X-Frame-Options "DENY" always;'))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_egress_still_rejected(self):
+        result = self.validate(self.manifest + "\negress: []\n")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unexpected egress:", result.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()

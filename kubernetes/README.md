@@ -94,6 +94,26 @@ memory resource bounds, all writable-volume size caps, the approved container
 image, response-security headers, a 30-second termination grace period, and
 PodDisruptionBudget. It does not connect to or change a cluster.
 
+Required settings are matched as complete lines after trimming surrounding
+whitespace. This prevents values such as `replicas: 10` from satisfying
+`replicas: 1`, and prevents a commented NGINX header from passing. The egress
+prohibition remains a substring check so inline forms such as `egress: []`
+are still rejected.
+
+These are text guardrails, not a YAML schema or per-resource policy engine.
+A matching setting elsewhere in the rendered output can still satisfy a
+requirement. Semantic validation will be needed as the lab gains workloads.
+
+The standard Python test suite includes validator regression tests using
+controlled renderer output, so it runs without `kubectl` or a cluster:
+
+```bash
+python3 -m unittest discover -s tests -p test_kubernetes_validator.py -v
+```
+
+Those tests cover matching and failure behavior; the Kubernetes Actions job
+separately checks the real Kustomize output.
+
 ## Apply to a local cluster later
 
 When a local Kubernetes cluster is available, apply the development overlay:

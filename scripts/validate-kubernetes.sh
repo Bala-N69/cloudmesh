@@ -14,12 +14,15 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 rendered_manifest="$(mktemp)"
 trap 'rm -f "$rendered_manifest"' EXIT
 
-kubectl kustomize "$repo_root/kubernetes/overlays/dev" > "$rendered_manifest"
+# Ignore indentation and trailing whitespace, but retain complete values and
+# comment markers. pipefail preserves renderer errors through normalization.
+kubectl kustomize "$repo_root/kubernetes/overlays/dev" |
+  sed 's/^[[:space:]]*//; s/[[:space:]]*$//' > "$rendered_manifest"
 
 require_manifest_text() {
   local expected="$1"
 
-  if ! grep -Fq -- "$expected" "$rendered_manifest"; then
+  if ! grep -Fxq -- "$expected" "$rendered_manifest"; then
     echo "Kubernetes validation failed: missing $expected" >&2
     exit 1
   fi
@@ -50,9 +53,9 @@ require_manifest_text "allowPrivilegeEscalation: false"
 require_manifest_text "- ALL"
 require_manifest_text "readOnlyRootFilesystem: true"
 require_manifest_text "image: nginxinc/nginx-unprivileged:1.27-alpine"
-require_manifest_text "X-Content-Type-Options \"nosniff\""
-require_manifest_text "X-Frame-Options \"DENY\""
-require_manifest_text "Referrer-Policy \"no-referrer\""
+require_manifest_text 'add_header X-Content-Type-Options "nosniff" always;'
+require_manifest_text 'add_header X-Frame-Options "DENY" always;'
+require_manifest_text 'add_header Referrer-Policy "no-referrer" always;'
 require_manifest_text "minReadySeconds: 10"
 require_manifest_text "maxUnavailable: 0"
 require_manifest_text "maxSurge: 1"
