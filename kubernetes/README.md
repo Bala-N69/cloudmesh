@@ -95,7 +95,9 @@ image, response-security headers, a 30-second termination grace period, and
 PodDisruptionBudget. It does not connect to or change a cluster.
 
 Required settings are matched as complete lines after trimming surrounding
-whitespace. This prevents values such as `replicas: 10` from satisfying
+whitespace, with an optional YAML list-item marker (`- `). This accepts fields
+that Kustomize places first in a list item, such as `- image: ...`, while
+still checking the exact value. This prevents values such as `replicas: 10` from satisfying
 `replicas: 1`, and prevents a commented NGINX header from passing. The egress
 prohibition remains a substring check so inline forms such as `egress: []`
 are still rejected.
