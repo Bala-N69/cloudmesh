@@ -22,7 +22,9 @@ kubectl kustomize "$repo_root/kubernetes/overlays/dev" |
 require_manifest_text() {
   local expected="$1"
 
-  if ! grep -Fxq -- "$expected" "$rendered_manifest"; then
+  # Kustomize may place this field first in a YAML list item ("- image:").
+  # Accept that marker while still requiring the entire field/value to match.
+  if ! grep -Fxq -e "$expected" -e "- $expected" -- "$rendered_manifest"; then
     echo "Kubernetes validation failed: missing $expected" >&2
     exit 1
   fi

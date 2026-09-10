@@ -45,6 +45,20 @@ class TestKubernetesValidator(unittest.TestCase):
         result = self.validate(padded)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_image_as_first_container_field(self):
+        # Kustomize sorts container keys, putting image at the list item's
+        # start ("- image:"), unlike our source manifest's "- name:".
+        rendered = self.manifest.replace(
+            '- name: web\n          image: nginxinc/nginx-unprivileged:1.27-alpine',
+            '- image: nginxinc/nginx-unprivileged:1.27-alpine\n          name: web')
+        self.assertNotEqual(rendered, self.manifest)
+        result = self.validate(rendered)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        invalid = rendered.replace('1.27-alpine', '1.27-alpine-unapproved')
+        result = self.validate(invalid)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('missing image:', result.stderr)
+
     def test_partial_values_are_rejected(self):
         for expected, changed in [
             ("replicas: 1", "replicas: 10"),
