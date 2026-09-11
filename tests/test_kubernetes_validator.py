@@ -22,15 +22,18 @@ class TestKubernetesValidator(unittest.TestCase):
             path.read_text() for path in resources if path.name != "kustomization.yaml"
         ).replace("replicas: 2", "replicas: 1")
 
-    def validate(self, manifest):
+    def validate(self, manifest, render_status=0):
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "manifest.yaml"
             fixture.write_text(manifest)
-            environment = dict(os.environ, CLOUDMESH_TEST_MANIFEST=str(fixture))
+            environment = dict(os.environ, CLOUDMESH_TEST_MANIFEST=str(fixture),
+                               CLOUDMESH_TEST_RENDER_STATUS=str(render_status))
             # Exported function substitutes only the renderer; the real shell
             # script, normalization and guardrail checks run unchanged.
             return subprocess.run(
-                ["bash", "-c", 'kubectl() { cat "$CLOUDMESH_TEST_MANIFEST"; }; '
+                ["bash", "-c", 'kubectl() { cat "$CLOUDMESH_TEST_MANIFEST"; '
+                 'if [ "$CLOUDMESH_TEST_RENDER_STATUS" != 0 ]; then echo "test renderer error" >&2; fi; '
+                 'return "$CLOUDMESH_TEST_RENDER_STATUS"; }; '
                  'export -f kubectl; bash "$1"', "validator-test", str(SCRIPT)],
                 env=environment, cwd=directory, text=True, capture_output=True,
                 timeout=15,
@@ -39,6 +42,21 @@ class TestKubernetesValidator(unittest.TestCase):
     def test_expected_manifest_passes(self):
         result = self.validate(self.manifest)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_renderer_failure_cannot_pass_with_valid_output(self):
+        result = self.validate(self.manifest, render_status=9)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("could not render", result.stderr)
+        self.assertIn("test renderer error", result.stderr)
+        self.assertNotIn("checks passed", result.stdout)
+
+    def test_empty_renderer_output_is_reported(self):
+        for output in ["", "\n \t\n"]:
+            with self.subTest(output=output):
+                result = self.validate(output)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("rendered no content", result.stderr)
+                self.assertNotIn("missing kind:", result.stderr)
 
     def test_whitespace_is_not_significant(self):
         padded = "\n".join("  " + line + "  " for line in self.manifest.splitlines())

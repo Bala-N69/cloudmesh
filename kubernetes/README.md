@@ -116,6 +116,13 @@ python3 -m unittest discover -s tests -p test_kubernetes_validator.py -v
 Those tests cover matching and failure behavior; the Kubernetes Actions job
 separately checks the real Kustomize output.
 
+If rendering fails, the validator preserves the renderer's error and reports
+that the development overlay could not be rendered. A failed renderer cannot
+pass even if it emitted valid-looking content first. Empty or whitespace-only
+output receives a separate `rendered no content` error before policy checks.
+These failures exit 1, making CI failures easier to distinguish from a missing
+security setting.
+
 ## Apply to a local cluster later
 
 When a local Kubernetes cluster is available, apply the development overlay:
