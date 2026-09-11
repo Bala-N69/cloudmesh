@@ -16,8 +16,16 @@ trap 'rm -f "$rendered_manifest"' EXIT
 
 # Ignore indentation and trailing whitespace, but retain complete values and
 # comment markers. pipefail preserves renderer errors through normalization.
-kubectl kustomize "$repo_root/kubernetes/overlays/dev" |
-  sed 's/^[[:space:]]*//; s/[[:space:]]*$//' > "$rendered_manifest"
+if ! kubectl kustomize "$repo_root/kubernetes/overlays/dev" |
+  sed 's/^[[:space:]]*//; s/[[:space:]]*$//' > "$rendered_manifest"; then
+  echo "Kubernetes validation failed: could not render the development overlay. See the renderer error above." >&2
+  exit 1
+fi
+
+if ! grep -q '[^[:space:]]' "$rendered_manifest"; then
+  echo "Kubernetes validation failed: the development overlay rendered no content." >&2
+  exit 1
+fi
 
 require_manifest_text() {
   local expected="$1"
