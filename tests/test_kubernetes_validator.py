@@ -63,6 +63,19 @@ class TestKubernetesValidator(unittest.TestCase):
         result = self.validate(padded)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_health_endpoint_settings_are_required(self):
+        for expected, changed in [
+            ("path: /healthz", "path: /"),
+            ("containerPort: 8080", "containerPort: 8081"),
+            ("name: http", "name: web"),
+            ("port: http", "port: missing"),
+            ("path: /healthz", "path: /healthz-other"),
+        ]:
+            with self.subTest(changed=changed):
+                result = self.validate(self.manifest.replace(expected, changed))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("missing " + expected, result.stderr)
+
     def test_image_as_first_container_field(self):
         # Kustomize sorts container keys, putting image at the list item's
         # start ("- image:"), unlike our source manifest's "- name:".
