@@ -103,6 +103,10 @@ prohibition remains a substring check so inline forms such as `egress: []`
 are still rejected.
 
 These are text guardrails, not a YAML schema or per-resource policy engine.
+They also require the `/healthz` probe path, container port `8080`, and the
+`http` port name and reference to remain present. This catches accidental
+removal or replacement of those endpoint settings. It does not verify every
+individual probe or resolve port references between resources.
 A matching setting elsewhere in the rendered output can still satisfy a
 requirement. Semantic validation will be needed as the lab gains workloads.
 
