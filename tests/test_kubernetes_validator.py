@@ -26,18 +26,27 @@ class TestKubernetesValidator(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "manifest.yaml"
             fixture.write_text(manifest)
+            scratch = Path(directory) / "validator-temp"
+            scratch.mkdir()
             environment = dict(os.environ, CLOUDMESH_TEST_MANIFEST=str(fixture),
-                               CLOUDMESH_TEST_RENDER_STATUS=str(render_status))
+                               CLOUDMESH_TEST_RENDER_STATUS=str(render_status),
+                               TMPDIR=str(scratch))
             # Exported function substitutes only the renderer; the real shell
             # script, normalization and guardrail checks run unchanged.
-            return subprocess.run(
-                ["bash", "-c", 'kubectl() { cat "$CLOUDMESH_TEST_MANIFEST"; '
+            result = subprocess.run(
+                ["bash", "-c", 'kubectl() { test -f "$TMPDIR/"* || return 88; '
+                 'cat "$CLOUDMESH_TEST_MANIFEST"; '
                  'if [ "$CLOUDMESH_TEST_RENDER_STATUS" != 0 ]; then echo "test renderer error" >&2; fi; '
                  'return "$CLOUDMESH_TEST_RENDER_STATUS"; }; '
                  'export -f kubectl; bash "$1"', "validator-test", str(SCRIPT)],
                 env=environment, cwd=directory, text=True, capture_output=True,
                 timeout=15,
             )
+            # Assert before TemporaryDirectory removes the enclosing folder,
+            # otherwise the test harness would hide a leaked manifest.
+            self.assertEqual(list(scratch.iterdir()), [], "Validator leaked temporary files")
+            self.assertTrue(fixture.is_file(), "Validator removed an unrelated file")
+            return result
 
     def test_expected_manifest_passes(self):
         result = self.validate(self.manifest)

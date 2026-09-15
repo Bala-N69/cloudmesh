@@ -120,6 +120,13 @@ python3 -m unittest discover -s tests -p test_kubernetes_validator.py -v
 Those tests cover matching and failure behavior; the Kubernetes Actions job
 separately checks the real Kustomize output.
 
+The validator's exit trap removes its temporary rendered manifest on normal
+success and error exits. Regression tests use a dedicated temporary directory
+and verify cleanup before the test harness removes that directory, including
+renderer errors, empty output, and rejected settings. They also check that an
+unrelated fixture file survives. This does not cover forced termination such
+as `SIGKILL`, which cannot run an exit trap.
+
 If rendering fails, the validator preserves the renderer's error and reports
 that the development overlay could not be rendered. A failed renderer cannot
 pass even if it emitted valid-looking content first. Empty or whitespace-only
