@@ -52,6 +52,20 @@ class TestKubernetesValidator(unittest.TestCase):
         result = self.validate(self.manifest)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_temporary_file_failure_stops_before_rendering(self):
+        result = subprocess.run(
+            ["bash", "-c",
+             'mktemp() { echo "test temporary-file error" >&2; return 7; }; '
+             'kubectl() { echo "renderer should not run" >&2; return 99; }; '
+             'export -f mktemp kubectl; bash "$1"', "validator-test", str(SCRIPT)],
+            capture_output=True, text=True, timeout=15,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("could not create a temporary manifest", result.stderr)
+        self.assertIn("test temporary-file error", result.stderr)
+        self.assertNotIn("renderer should not run", result.stderr)
+        self.assertEqual(result.stdout, "")
+
     def test_renderer_failure_cannot_pass_with_valid_output(self):
         result = self.validate(self.manifest, render_status=9)
         self.assertEqual(result.returncode, 1)
