@@ -127,6 +127,11 @@ renderer errors, empty output, and rejected settings. They also check that an
 unrelated fixture file survives. This does not cover forced termination such
 as `SIGKILL`, which cannot run an exit trap.
 
+If temporary-file creation fails, validation exits 1 before invoking Kustomize.
+The original system error is preserved alongside a message to check temporary
+directory permissions and available disk space. Fix the local storage issue
+and rerun validation; this is not a manifest policy failure.
+
 If rendering fails, the validator preserves the renderer's error and reports
 that the development overlay could not be rendered. A failed renderer cannot
 pass even if it emitted valid-looking content first. Empty or whitespace-only

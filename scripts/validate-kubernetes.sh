@@ -11,7 +11,10 @@ fi
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
-rendered_manifest="$(mktemp)"
+if ! rendered_manifest="$(mktemp)"; then
+  echo "Kubernetes validation failed: could not create a temporary manifest. Check temporary-directory permissions and available disk space." >&2
+  exit 1
+fi
 trap 'rm -f "$rendered_manifest"' EXIT
 
 # Ignore indentation and trailing whitespace, but retain complete values and
