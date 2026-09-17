@@ -4,6 +4,22 @@
 # is expected to demonstrate. This does not apply anything to a cluster.
 set -euo pipefail
 
+usage() {
+  echo "Usage: bash scripts/validate-kubernetes.sh [--help|-h]"
+  echo "Render the development overlay with kubectl and check lab guardrails."
+  echo "Requires kubectl on PATH. Does not connect to or deploy to a cluster."
+}
+
+if [[ "$#" -eq 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
+  usage
+  exit 0
+fi
+if [[ "$#" -ne 0 ]]; then
+  echo "Kubernetes validation: unexpected arguments." >&2
+  usage >&2
+  exit 2
+fi
+
 if ! command -v kubectl >/dev/null 2>&1; then
   echo "Kubernetes validation requires kubectl on PATH. Install kubectl or use the GitHub Actions Kubernetes validation job." >&2
   exit 1

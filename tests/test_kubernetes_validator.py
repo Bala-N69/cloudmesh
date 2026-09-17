@@ -52,6 +52,30 @@ class TestKubernetesValidator(unittest.TestCase):
         result = self.validate(self.manifest)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_help_without_external_tools(self):
+        for flag in ["--help", "-h"]:
+            with self.subTest(flag=flag):
+                result = subprocess.run(
+                    ["/bin/bash", str(SCRIPT), flag],
+                    env={**os.environ, "PATH": "/nonexistent"},
+                    capture_output=True, text=True, timeout=15,
+                )
+                self.assertEqual(result.returncode, 0)
+                self.assertIn("Usage:", result.stdout)
+                self.assertEqual(result.stderr, "")
+
+    def test_unexpected_arguments_fail_before_dependencies(self):
+        for args in [["--hel"], ["prod"], ["--help", "prod"]]:
+            with self.subTest(args=args):
+                result = subprocess.run(
+                    ["/bin/bash", str(SCRIPT), *args],
+                    env={**os.environ, "PATH": "/nonexistent"},
+                    capture_output=True, text=True, timeout=15,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("unexpected arguments", result.stderr)
+                self.assertEqual(result.stdout, "")
+
     def test_temporary_file_failure_stops_before_rendering(self):
         result = subprocess.run(
             ["bash", "-c",
