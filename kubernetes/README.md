@@ -74,6 +74,11 @@ To render the overlay and verify the key security defaults used in this lab:
 bash scripts/validate-kubernetes.sh
 ```
 
+For usage information, run `bash scripts/validate-kubernetes.sh --help`
+(or `-h`). Help exits 0 without requiring `kubectl` or creating temporary
+files. Unsupported arguments exit 2 before rendering, so a typo or an
+unsupported overlay name cannot silently run development checks.
+
 The command above uses a path relative to the repository root. From another
 folder, pass the script's absolute path to `bash`; the script locates the
 development overlay relative to its own location. For example, from this
