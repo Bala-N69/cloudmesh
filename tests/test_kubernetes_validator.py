@@ -52,6 +52,25 @@ class TestKubernetesValidator(unittest.TestCase):
         result = self.validate(self.manifest)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_relative_invocation_ignores_cdpath(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Path(directory) / "manifest.yaml"
+            fixture.write_text(self.manifest)
+            result = subprocess.run(
+                ["bash", "-c",
+                 'kubectl() { [ "$#" -eq 2 ] && [ "$1" = kustomize ] && '
+                 '[ "$2" = "$CLOUDMESH_TEST_OVERLAY" ] || return 89; '
+                 'cat "$CLOUDMESH_TEST_MANIFEST"; }; export -f kubectl; '
+                 'bash scripts/validate-kubernetes.sh'],
+                cwd=ROOT, env={**os.environ, "CDPATH": str(ROOT),
+                    "TMPDIR": directory, "CLOUDMESH_TEST_MANIFEST": str(fixture),
+                    "CLOUDMESH_TEST_OVERLAY": str(ROOT / "kubernetes/overlays/dev")},
+                capture_output=True, text=True, timeout=15,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, "Kubernetes manifest security checks passed.\n")
+            self.assertEqual(list(Path(directory).iterdir()), [fixture])
+
     def test_help_without_external_tools(self):
         for flag in ["--help", "-h"]:
             with self.subTest(flag=flag):

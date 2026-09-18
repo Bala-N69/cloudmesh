@@ -25,7 +25,8 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
-repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+# CDPATH can make cd print a directory, corrupting the captured root path.
+repo_root="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if ! rendered_manifest="$(mktemp)"; then
   echo "Kubernetes validation failed: could not create a temporary manifest. Check temporary-directory permissions and available disk space." >&2
