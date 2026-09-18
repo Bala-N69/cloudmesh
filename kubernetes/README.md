@@ -84,6 +84,11 @@ folder, pass the script's absolute path to `bash`; the script locates the
 development overlay relative to its own location. For example, from this
 `kubernetes/` folder, run `bash ../scripts/validate-kubernetes.sh`.
 
+The script ignores shell `CDPATH` settings while resolving its repository
+root. This prevents directory-search output from corrupting the overlay path
+when the script is invoked using a relative path. A regression test exercises
+this case with controlled renderer output and checks the exact overlay argument.
+
 It requires `kubectl` on your
 `PATH`; if it is missing, the script exits with a clear prerequisite message
 before creating temporary files. You can also use the GitHub Actions
