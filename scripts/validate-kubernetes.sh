@@ -50,7 +50,8 @@ if ! kubectl kustomize "$repo_root/kubernetes/overlays/dev" |
   exit 1
 fi
 
-if ! grep -q '[^[:space:]]' "$rendered_manifest"; then
+# Comments and document boundaries alone do not contain a workload to check.
+if ! grep -Eqv '^($|#|---([[:space:]]|$)|[.][.][.]([[:space:]]|$))' "$rendered_manifest"; then
   echo "Kubernetes validation failed: the development overlay rendered no content." >&2
   exit 1
 fi

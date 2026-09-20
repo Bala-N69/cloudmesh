@@ -137,12 +137,17 @@ class TestKubernetesValidator(unittest.TestCase):
         self.assertNotIn("checks passed", result.stdout)
 
     def test_empty_renderer_output_is_reported(self):
-        for output in ["", "\n \t\n"]:
+        for output in ["", "\n \t\n", "# generated output\n",
+                       "---\n...\n", "  # comment\n--- # document\n... # end\n"]:
             with self.subTest(output=output):
                 result = self.validate(output)
                 self.assertEqual(result.returncode, 1)
                 self.assertIn("rendered no content", result.stderr)
                 self.assertNotIn("missing kind:", result.stderr)
+
+    def test_document_markers_and_comments_with_resources_pass(self):
+        result = self.validate("# generated output\n---\n" + self.manifest + "\n...\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_whitespace_is_not_significant(self):
         padded = "\n".join("  " + line + "  " for line in self.manifest.splitlines())

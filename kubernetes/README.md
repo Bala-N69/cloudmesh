@@ -152,6 +152,10 @@ If rendering fails, the validator preserves the renderer's error and reports
 that the development overlay could not be rendered. A failed renderer cannot
 pass even if it emitted valid-looking content first. Empty or whitespace-only
 output receives a separate `rendered no content` error before policy checks.
+Output consisting only of YAML comments or document markers (`---` and `...`)
+is also treated as empty. Comments and markers alongside resource content
+are allowed. This distinguishes an empty render from missing security fields;
+it is not a full YAML syntax or resource validation step.
 These failures exit 1, making CI failures easier to distinguish from a missing
 security setting.
 
