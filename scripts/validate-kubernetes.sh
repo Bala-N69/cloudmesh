@@ -26,6 +26,14 @@ if ! command -v kubectl >/dev/null 2>&1; then
 fi
 
 # CDPATH can make cd print a directory, corrupting the captured root path.
+for required_tool in dirname mktemp rm sed grep; do
+  if ! command -v "$required_tool" >/dev/null 2>&1; then
+    echo "Kubernetes validation requires $required_tool on PATH. Restore the system utilities before retrying." >&2
+    exit 1
+  fi
+done
+
+# Resolve only after verifying the tools needed for rendering and cleanup.
 repo_root="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if ! rendered_manifest="$(mktemp)"; then
@@ -42,7 +50,8 @@ if ! kubectl kustomize "$repo_root/kubernetes/overlays/dev" |
   exit 1
 fi
 
-if ! grep -q '[^[:space:]]' "$rendered_manifest"; then
+# Comments and document boundaries alone do not contain a workload to check.
+if ! grep -Eqv '^($|#|---([[:space:]]|$)|[.][.][.]([[:space:]]|$))' "$rendered_manifest"; then
   echo "Kubernetes validation failed: the development overlay rendered no content." >&2
   exit 1
 fi
