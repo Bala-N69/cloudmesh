@@ -109,6 +109,26 @@ class TestKubernetesValidator(unittest.TestCase):
         self.assertNotIn("renderer should not run", result.stderr)
         self.assertEqual(result.stdout, "")
 
+    def test_missing_utilities_fail_before_any_work(self):
+        tools = ["kubectl", "dirname", "mktemp", "rm", "sed", "grep"]
+        for missing in tools:
+            with self.subTest(missing=missing):
+                available = [tool for tool in tools if tool != missing]
+                stubs = " ".join(
+                    f'{tool}() {{ echo "unexpected execution: {tool}" >&2; return 99; }};'
+                    for tool in available
+                )
+                command = stubs + " export -f " + " ".join(available) + '; /bin/bash "$1"'
+                result = subprocess.run(
+                    ["/bin/bash", "-c", command, "validator-test", str(SCRIPT)],
+                    env={**os.environ, "PATH": "/nonexistent"},
+                    capture_output=True, text=True, timeout=15,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(f"requires {missing} on PATH", result.stderr)
+                self.assertNotIn("unexpected execution", result.stderr)
+                self.assertEqual(result.stdout, "")
+
     def test_renderer_failure_cannot_pass_with_valid_output(self):
         result = self.validate(self.manifest, render_status=9)
         self.assertEqual(result.returncode, 1)
