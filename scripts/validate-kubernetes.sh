@@ -73,6 +73,13 @@ forbid_manifest_text() {
   if grep -Fq -- "$unexpected" "$rendered_manifest"; then
     echo "Kubernetes validation failed: unexpected $unexpected" >&2
     exit 1
+  else
+    local search_status=$?
+    # Only exit 1 means the forbidden setting was successfully checked and absent.
+    if [[ "$search_status" -ne 1 ]]; then
+      echo "Kubernetes validation failed: could not check forbidden setting $unexpected (grep exit $search_status)." >&2
+      exit 1
+    fi
   fi
 }
 

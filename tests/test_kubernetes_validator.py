@@ -22,7 +22,7 @@ class TestKubernetesValidator(unittest.TestCase):
             path.read_text() for path in resources if path.name != "kustomization.yaml"
         ).replace("replicas: 2", "replicas: 1")
 
-    def validate(self, manifest, render_status=0):
+    def validate(self, manifest, render_status=0, forbidden_search_status=0):
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "manifest.yaml"
             fixture.write_text(manifest)
@@ -30,15 +30,19 @@ class TestKubernetesValidator(unittest.TestCase):
             scratch.mkdir()
             environment = dict(os.environ, CLOUDMESH_TEST_MANIFEST=str(fixture),
                                CLOUDMESH_TEST_RENDER_STATUS=str(render_status),
+                               CLOUDMESH_TEST_SEARCH_STATUS=str(forbidden_search_status),
                                TMPDIR=str(scratch))
-            # Exported function substitutes only the renderer; the real shell
-            # script, normalization and guardrail checks run unchanged.
+            # Substitute the renderer and optionally inject a forbidden-search
+            # error; otherwise use real grep and the unchanged validator script.
             result = subprocess.run(
                 ["bash", "-c", 'kubectl() { test -f "$TMPDIR/"* || return 88; '
                  'cat "$CLOUDMESH_TEST_MANIFEST"; '
                  'if [ "$CLOUDMESH_TEST_RENDER_STATUS" != 0 ]; then echo "test renderer error" >&2; fi; '
                  'return "$CLOUDMESH_TEST_RENDER_STATUS"; }; '
-                 'export -f kubectl; bash "$1"', "validator-test", str(SCRIPT)],
+                 'grep() { if [ "$1" = "-Fq" ] && [ "$CLOUDMESH_TEST_SEARCH_STATUS" != 0 ]; '
+                 'then echo "test search error" >&2; return "$CLOUDMESH_TEST_SEARCH_STATUS"; '
+                 'fi; command grep "$@"; }; '
+                 'export -f kubectl grep; bash "$1"', "validator-test", str(SCRIPT)],
                 env=environment, cwd=directory, text=True, capture_output=True,
                 timeout=15,
             )
@@ -51,6 +55,15 @@ class TestKubernetesValidator(unittest.TestCase):
     def test_expected_manifest_passes(self):
         result = self.validate(self.manifest)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_forbidden_search_error_cannot_pass(self):
+        for status in [2, 127]:
+            with self.subTest(status=status):
+                result = self.validate(self.manifest, forbidden_search_status=status)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("could not check forbidden setting egress:", result.stderr)
+                self.assertIn("test search error", result.stderr)
+                self.assertNotIn("checks passed", result.stdout)
 
     def test_relative_invocation_ignores_cdpath(self):
         with tempfile.TemporaryDirectory() as directory:
