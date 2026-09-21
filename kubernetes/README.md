@@ -118,6 +118,12 @@ still checking the exact value. This prevents values such as `replicas: 10` from
 prohibition remains a substring check so inline forms such as `egress: []`
 are still rejected.
 
+The forbidden-setting check distinguishes a successful search with no match
+from a search-tool error. If that search fails, validation exits 1, preserves
+the original error, and reports `could not check forbidden setting` with the
+search exit code instead of reporting success. Regression tests inject search
+errors and verify failure, no success message, and temporary-file cleanup.
+
 These are text guardrails, not a YAML schema or per-resource policy engine.
 They also require the `/healthz` probe path, container port `8080`, and the
 `http` port name and reference to remain present. This catches accidental
