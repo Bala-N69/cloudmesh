@@ -12,6 +12,7 @@ CloudMesh Sentinel is designed for cloud and DevSecOps workflows where catching 
 - Public Google Cloud Storage IAM access
 - Cloud Storage buckets without uniform bucket-level access
 - Service accounts assigned broad project roles such as Owner or Editor
+- Project IAM member/binding changes that include public principals
 - GKE control planes that allow access from any IPv4 address
 - Resources scheduled for deletion
 - Resources scheduled for replacement

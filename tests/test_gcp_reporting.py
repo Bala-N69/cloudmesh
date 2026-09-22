@@ -48,6 +48,24 @@ class TestGcpFirewall(unittest.TestCase):
                          [("HIGH", "google_compute_firewall.test", "Resource will be deleted.")])
 
 
+class TestProjectPublicIam(unittest.TestCase):
+    def test_public_principals_and_private_bindings(self):
+        for resource_type, field in [("google_project_iam_member", "member"),
+                                     ("google_project_iam_binding", "members")]:
+            for member in ["allUsers", "allAuthenticatedUsers", "domain:example.invalid", None]:
+                with self.subTest(resource_type=resource_type, member=member):
+                    after = {"role": "roles/viewer", field: [member] if field == "members" and member else member}
+                    plan = {"resource_changes": [{"address": "project_access",
+                        "type": resource_type, "change": {"actions": ["create"], "after": after}}]}
+                    expected = [("HIGH", "project_access", "Project IAM change includes a public principal.")]
+                    self.assertEqual(scan_plan(plan), expected if member in {"allUsers", "allAuthenticatedUsers"} else [])
+
+    def test_removed_public_binding_only_reports_deletion(self):
+        plan = {"resource_changes": [{"address": "project_access", "type": "google_project_iam_binding",
+            "change": {"actions": ["delete"], "before": {"members": ["allUsers"]}, "after": None}}]}
+        self.assertEqual(scan_plan(plan), [("HIGH", "project_access", "Resource will be deleted.")])
+
+
 class TestCliReports(unittest.TestCase):
     def run_cli(self, *args):
         return subprocess.run([sys.executable, str(ROOT / "cloudmesh_sentinel/cli.py"),

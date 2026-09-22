@@ -58,4 +58,13 @@ service-account roles, Cloud SQL public IPv4, GKE control-plane exposure, and
 resource deletion/replacement. These are a limited set of heuristics, not a
 compliance assessment. Keep real plans and secrets out of the repository.
 
-Reference: [Google provider firewall resource](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_firewall).
+Project IAM member and binding resources are also flagged HIGH when their
+planned `after` values include `allUsers` or `allAuthenticatedUsers`, regardless
+of role. The latter is not limited to your organization. This flags a risky
+configuration attempt; it does not assert that Google accepts the binding or
+that organization policies permit access. Unknown members are not inferred,
+and full `google_project_iam_policy` JSON is not inspected. Deleting a public
+binding produces the existing deletion warning, not a new public-access warning.
+
+References: [Google provider firewall resource](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_firewall)
+and [Google IAM principals](https://docs.cloud.google.com/iam/docs/principals-overview).
