@@ -129,6 +129,11 @@ They also require the `/healthz` probe path, container port `8080`, and the
 `http` port name and reference to remain present. This catches accidental
 removal or replacement of those endpoint settings. It does not verify every
 individual probe or resolve port references between resources.
+All three probe keys (`startupProbe`, `readinessProbe`, and `livenessProbe`)
+must be present as uncommented settings. Regression tests remove or comment
+each key and require validation to fail, even when shared endpoint settings
+remain elsewhere in the output. This is a presence check, not validation of
+each probe's complete configuration or behavior on a running cluster.
 A matching setting elsewhere in the rendered output can still satisfy a
 requirement. Semantic validation will be needed as the lab gains workloads.
 

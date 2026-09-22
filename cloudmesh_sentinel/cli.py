@@ -90,6 +90,10 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
         }:
             members = {after.get("member"), *(after.get("members") or [])}
             role = after.get("role")
+            if PUBLIC_MEMBERS.intersection(members):
+                findings.append(
+                    ("HIGH", address, "Project IAM change includes a public principal.")
+                )
             has_service_account = any(
                 isinstance(member, str) and member.startswith("serviceAccount:")
                 for member in members

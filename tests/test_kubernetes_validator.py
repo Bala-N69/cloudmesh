@@ -180,6 +180,15 @@ class TestKubernetesValidator(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("missing " + expected, result.stderr)
 
+    def test_all_probe_types_are_required(self):
+        for probe in ["startupProbe:", "readinessProbe:", "livenessProbe:"]:
+            for replacement in ["", "# " + probe]:
+                with self.subTest(probe=probe, replacement=replacement):
+                    result = self.validate(self.manifest.replace(probe, replacement))
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn("missing " + probe, result.stderr)
+                    self.assertNotIn("checks passed", result.stdout)
+
     def test_image_as_first_container_field(self):
         # Kustomize sorts container keys, putting image at the list item's
         # start ("- image:"), unlike our source manifest's "- name:".
