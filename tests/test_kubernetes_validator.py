@@ -189,6 +189,19 @@ class TestKubernetesValidator(unittest.TestCase):
                     self.assertIn("missing " + probe, result.stderr)
                     self.assertNotIn("checks passed", result.stdout)
 
+    def test_ephemeral_storage_limit_is_required(self):
+        expected = "ephemeral-storage: 256Mi"
+        for replacement in ["", "# " + expected, "ephemeral-storage: 512Mi",
+                            "ephemeral-storage: 256Mi-extra"]:
+            with self.subTest(replacement=replacement):
+                manifest = self.manifest.replace(expected, replacement)
+                self.assertNotEqual(manifest, self.manifest)
+                self.assertIn("ephemeral-storage: 128Mi", manifest)
+                result = self.validate(manifest)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("missing " + expected, result.stderr)
+                self.assertNotIn("checks passed", result.stdout)
+
     def test_image_as_first_container_field(self):
         # Kustomize sorts container keys, putting image at the list item's
         # start ("- image:"), unlike our source manifest's "- name:".
