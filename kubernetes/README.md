@@ -125,6 +125,11 @@ search exit code instead of reporting success. Regression tests inject search
 errors and verify failure, no success message, and temporary-file cleanup.
 
 These are text guardrails, not a YAML schema or per-resource policy engine.
+The lab's ephemeral-storage request (`128Mi`) and limit (`256Mi`) must both
+appear as complete, uncommented settings. Tests verify that deleting,
+commenting out, or changing the limit fails even when the request remains.
+This preserves the lab's chosen values; it does not associate each value with
+a particular container or validate runtime storage enforcement.
 They also require the `/healthz` probe path, container port `8080`, and the
 `http` port name and reference to remain present. This catches accidental
 removal or replacement of those endpoint settings. It does not verify every
