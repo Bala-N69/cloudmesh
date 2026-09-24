@@ -38,6 +38,13 @@ CloudMesh Sentinel: 3 finding(s)
   Resource will be replaced.
 ```
 
+## Docker packaging
+
+The scanner can also be packaged as a non-root container with only its source
+and synthetic examples. See the [Docker guide](docs/docker.md) for build/run
+commands, read-only input mounts, and opt-in container tests. A Docker engine
+is required; no cloud account is needed. Container checks are not yet in CI.
+
 ## Run the tests
 
 ```bash

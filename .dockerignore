@@ -1,0 +1,9 @@
+# Deny by default: only application source and named synthetic fixtures enter builds.
+**
+!cloudmesh_sentinel/
+!cloudmesh_sentinel/cli.py
+!cloudmesh_sentinel/__init__.py
+!examples/
+!examples/demo-plan.json
+!examples/safe-plan.json
+!examples/gcp-network-risk-plan.json
