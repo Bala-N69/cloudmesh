@@ -52,15 +52,20 @@ After building the image, run the opt-in integration tests:
 CLOUDMESH_DOCKER_TEST_IMAGE=cloudmesh-sentinel:local python3 -m unittest discover -s tests -p test_container.py -v
 ```
 
-They verify help, safe/risky exit codes and JSON output, and non-root identity
-under the hardened runtime options. They never build or pull images. Without
-the environment variable, the normal Python suite skips these four tests;
+They verify help, safe/risky exit codes and JSON output, non-root identity,
+and scanning external synthetic plans through a read-only file mount. Malformed
+mounted JSON must exit 2 without a success report. A separate write probe must
+receive a read-only-filesystem error, and the host fixture must remain unchanged.
+Only disposable synthetic fixtures are made readable/writable for those checks;
+never change sensitive input permissions to imitate the tests.
+They never build or pull images. Without
+the environment variable, the normal Python suite skips these six tests;
 a passing default suite does not prove the container builds or runs.
 
 ## GitHub Actions
 
 The `Build and test Sentinel container` job builds `cloudmesh-sentinel:ci` on
-an Ubuntu runner and sets `CLOUDMESH_DOCKER_TEST_IMAGE` to enable all four tests.
+an Ubuntu runner and sets `CLOUDMESH_DOCKER_TEST_IMAGE` to enable all six tests.
 Build or test failures fail the job. The image remains on the temporary runner:
 there is no registry login, image push, deployment, or cloud credential usage.
 The job has a ten-minute timeout and read-only repository permissions.
