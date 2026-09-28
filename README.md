@@ -44,7 +44,8 @@ The scanner can also be packaged as a non-root container with only its source
 and synthetic examples. See the [Docker guide](docs/docker.md) for build/run
 commands, read-only input mounts, and opt-in container tests. A Docker engine
 is required for local container checks; no cloud account is needed. GitHub
-Actions builds the image and runs its four integration tests in a separate job.
+Actions builds the image and runs its six integration tests in a separate job,
+including external read-only plan inputs and malformed-input handling.
 
 ## Run the tests
 
