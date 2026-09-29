@@ -145,6 +145,17 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
     return findings
 
 
+def reject_duplicate_keys(pairs):
+    """Reject ambiguous JSON objects at every nesting level."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            # Do not echo arbitrary input keys or values into CI logs.
+            raise ValueError("Duplicate JSON key; each object must have unique keys")
+        result[key] = value
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scan a Terraform plan JSON file for infrastructure risks."
@@ -157,7 +168,7 @@ def main() -> int:
 
     try:
         with args.plan.open(encoding="utf-8") as file:
-            plan = json.load(file)
+            plan = json.load(file, object_pairs_hook=reject_duplicate_keys)
         if not isinstance(plan, dict) or not isinstance(plan.get("resource_changes", []), list):
             raise ValueError("Expected a plan object with a resource_changes list")
         findings = scan_plan(plan)

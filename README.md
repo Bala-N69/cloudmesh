@@ -77,6 +77,10 @@ threshold, 1 for a policy failure, and 2 for input/usage errors. The default
 remains informational, even when findings are present. JSON reports include
 a schema version, severity counts, resource addresses, and messages.
 
+Duplicate JSON keys are rejected at any nesting level with exit code 2 and no
+success report, preventing later values from silently hiding earlier changes.
+Repeated field names in separate objects remain valid.
+
 See the [GCP plan lab](terraform/README.md) for examples and detection limits.
 Zero findings means no implemented rule matched; it is not proof of security.
 
