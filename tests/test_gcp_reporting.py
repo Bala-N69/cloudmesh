@@ -113,6 +113,23 @@ class TestCliReports(unittest.TestCase):
             result = self.run_cli(Path(directory) / "missing.json")
             self.assertEqual(result.returncode, 2)
 
+    def test_duplicate_json_keys_are_rejected(self):
+        documents = [
+            '{"resource_changes": [{"change": {"actions": ["delete"]}}], "resource_changes": []}',
+            '{"resource_changes": [], "resource_changes": []}',
+            '{"resource_changes": [{"change": {"actions": ["delete"], "actions": []}}]}',
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plan.json"
+            for document in documents:
+                path.write_text(document, encoding="utf-8")
+                for output_format in ["text", "json"]:
+                    with self.subTest(document=document, output_format=output_format):
+                        result = self.run_cli(path, "--format", output_format)
+                        self.assertEqual(result.returncode, 2)
+                        self.assertEqual(result.stdout, "")
+                        self.assertIn("Duplicate JSON key", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
