@@ -156,6 +156,11 @@ def reject_duplicate_keys(pairs):
     return result
 
 
+def reject_nonfinite_constant(value):
+    """Reject Python's JSON extensions for non-finite numeric literals."""
+    raise ValueError("Invalid JSON numeric constant; NaN and Infinity are not permitted")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scan a Terraform plan JSON file for infrastructure risks."
@@ -168,7 +173,8 @@ def main() -> int:
 
     try:
         with args.plan.open(encoding="utf-8") as file:
-            plan = json.load(file, object_pairs_hook=reject_duplicate_keys)
+            plan = json.load(file, object_pairs_hook=reject_duplicate_keys,
+                             parse_constant=reject_nonfinite_constant)
         if not isinstance(plan, dict) or not isinstance(plan.get("resource_changes", []), list):
             raise ValueError("Expected a plan object with a resource_changes list")
         findings = scan_plan(plan)
