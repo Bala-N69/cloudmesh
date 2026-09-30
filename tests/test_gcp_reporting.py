@@ -130,6 +130,28 @@ class TestCliReports(unittest.TestCase):
                         self.assertEqual(result.stdout, "")
                         self.assertIn("Duplicate JSON key", result.stderr)
 
+    def test_nonfinite_json_constants_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plan.json"
+            for constant in ["NaN", "Infinity", "-Infinity"]:
+                path.write_text('{"resource_changes": [], "metadata": {"value": ' + constant + '}}',
+                                encoding="utf-8")
+                for output_format in ["text", "json"]:
+                    with self.subTest(constant=constant, output_format=output_format):
+                        result = self.run_cli(path, "--format", output_format)
+                        self.assertEqual(result.returncode, 2)
+                        self.assertEqual(result.stdout, "")
+                        self.assertIn("Invalid JSON numeric constant", result.stderr)
+
+    def test_numeric_values_and_constant_strings_remain_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plan.json"
+            path.write_text(json.dumps({"resource_changes": [], "metadata": {
+                "values": [0, -5, 1.25, "NaN", "Infinity", "-Infinity"]}}), encoding="utf-8")
+            result = self.run_cli(path, "--format", "json")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["findings"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
