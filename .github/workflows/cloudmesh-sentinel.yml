@@ -62,6 +62,13 @@ jobs:
           python cloudmesh_sentinel/cli.py examples/gcp-network-risk-plan.json --format json --fail-on high || status=$?
           test "$status" -eq 1
 
+      - name: Add synthetic risk report to job summary
+        run: |
+          status=0
+          python cloudmesh_sentinel/cli.py examples/demo-plan.json --format markdown --fail-on high > "$RUNNER_TEMP/cloudmesh-demo-report.md" || status=$?
+          test "$status" -eq 1
+          cat "$RUNNER_TEMP/cloudmesh-demo-report.md" >> "$GITHUB_STEP_SUMMARY"
+
   container:
     name: Build and test Sentinel container
     runs-on: ubuntu-latest

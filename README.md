@@ -87,6 +87,27 @@ and quoted strings such as `"Infinity"` remain accepted.
 See the [GCP plan lab](terraform/README.md) for examples and detection limits.
 Zero findings means no implemented rule matched; it is not proof of security.
 
+## Markdown reports
+
+Create a readable risk report for a pull request or review:
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/demo-plan.json --format markdown > /tmp/cloudmesh-report.md
+```
+
+Reports contain HIGH/MEDIUM totals, a gate result, and findings sorted by
+severity and resource. Add `--fail-on high` or `--fail-on medium` to enforce
+the same exit codes as text/JSON output. The report is still printed when the
+gate fails; invalid input exits 2 without printing a report. The default is
+informational. Resource and finding text is escaped to preserve table layout
+and prevent it from introducing Markdown links or HTML.
+
+GitHub Actions adds a report for the synthetic demo to the scanner job summary.
+It deliberately expects exit 1 from that risky demo; unexpected exit codes fail
+the step. It does not automatically publish reports from real infrastructure.
+Review reports before sharing: resource names may be sensitive even when the
+raw plan is omitted. See [reporting examples](docs/reports.md).
+
 ## Kubernetes lab
 
 CloudMesh also includes a local-first Kubernetes baseline in
@@ -133,7 +154,6 @@ cloudmesh/
 
 ## Roadmap
 
-- Support Markdown risk reports
 - Expand checks for GCP, AWS, and Azure Terraform resources
 
 ## Security note
