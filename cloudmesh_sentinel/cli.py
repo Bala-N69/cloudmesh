@@ -161,12 +161,44 @@ def reject_nonfinite_constant(value):
     raise ValueError("Invalid JSON numeric constant; NaN and Infinity are not permitted")
 
 
+def markdown_cell(value: str) -> str:
+    """Encode punctuation so plan content cannot introduce Markdown or HTML."""
+    return "".join(
+        character if character.isalnum() or character == " " else f"&#{ord(character)};"
+        for character in " ".join(str(value).split())
+    )
+
+
+def markdown_report(findings, threshold: str) -> str:
+    counts = {level: sum(severity == level for severity, _, _ in findings)
+              for level in SEVERITY_RANK}
+    blocked = threshold != "none" and any(
+        SEVERITY_RANK[severity] >= SEVERITY_RANK[threshold.upper()]
+        for severity, _, _ in findings)
+    gate = "Informational (no failure threshold)" if threshold == "none" else (
+        f"{'FAIL' if blocked else 'PASS'} (threshold: {threshold.upper()})")
+    lines = ["# CloudMesh Sentinel report", "", f"Gate: {gate}", "",
+             "| Total | HIGH | MEDIUM |", "| --- | --- | --- |",
+             f"| {len(findings)} | {counts['HIGH']} | {counts['MEDIUM']} |", ""]
+    if findings:
+        lines += ["## Findings", "", "| Severity | Resource | Finding |",
+                  "| --- | --- | --- |"]
+        # Sort a copy: preserve the original order of text/JSON reports.
+        for severity, address, message in sorted(
+                findings, key=lambda item: (-SEVERITY_RANK[item[0]], item[1], item[2])):
+            lines.append(f"| {severity} | {markdown_cell(address)} | {markdown_cell(message)} |")
+    else:
+        lines.append("No findings matched the implemented rules.")
+    lines += ["", "This report covers implemented checks only; zero findings is not proof of security."]
+    return "\n".join(lines)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scan a Terraform plan JSON file for infrastructure risks."
     )
     parser.add_argument("plan", type=Path, help="Path to Terraform plan JSON")
-    parser.add_argument("--format", choices=("text", "json"), default="text")
+    parser.add_argument("--format", choices=("text", "json", "markdown"), default="text")
     parser.add_argument("--fail-on", choices=("none", "medium", "high"), default="none",
                         help="Exit 1 for findings at or above this severity (default: none)")
     args = parser.parse_args()
@@ -191,6 +223,8 @@ def main() -> int:
             "findings": [{"severity": severity, "address": address, "message": message}
                          for severity, address, message in findings],
         }, indent=2))
+    elif args.format == "markdown":
+        print(markdown_report(findings, args.fail_on))
     else:
         print(f"CloudMesh Sentinel: {len(findings)} finding(s)\n")
         for severity, address, message in findings:
