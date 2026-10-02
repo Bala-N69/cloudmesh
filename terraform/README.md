@@ -62,9 +62,34 @@ Project IAM member and binding resources are also flagged HIGH when their
 planned `after` values include `allUsers` or `allAuthenticatedUsers`, regardless
 of role. The latter is not limited to your organization. This flags a risky
 configuration attempt; it does not assert that Google accepts the binding or
-that organization policies permit access. Unknown members are not inferred,
-and full `google_project_iam_policy` JSON is not inspected. Deleting a public
+that organization policies permit access. Unknown members are not inferred.
+Deleting a public
 binding produces the existing deletion warning, not a new public-access warning.
 
 References: [Google provider firewall resource](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_firewall)
 and [Google IAM principals](https://docs.cloud.google.com/iam/docs/principals-overview).
+
+## Full IAM policies and service-account keys
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/gcp-identity-risk-plan.json --format markdown --fail-on high
+```
+
+This synthetic example emits four HIGH findings and exits 1:
+
+- Public members in `google_project_iam_policy.policy_data`.
+- Owner/Editor granted to a service account in the project policy.
+- Public members in `google_storage_bucket_iam_policy.policy_data`.
+- A `google_service_account_key` create action.
+
+The scanner parses the JSON string in the planned `after.policy_data` and
+checks bindings. Each policy emits at most one public and one privileged-role
+finding. Conditions are not evaluated; a conditional grant still warrants
+review. Malformed policy JSON, duplicate keys, or invalid binding shapes cause
+exit 2 without a report. Missing/null policy data is unknown and not inferred.
+Deletion-only changes receive the existing deletion finding. Key replacement
+emits both replacement and key-creation findings; no-op keys are not flagged.
+The key check covers generated and uploaded keys and does not read key material.
+These are review policies, not proof of effective access or provider acceptance.
+
+Reference: [Google service account key resource](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/google_service_account_key).
