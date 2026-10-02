@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY cloudmesh_sentinel/cli.py cloudmesh_sentinel/__init__.py ./cloudmesh_sentinel/
 COPY examples/demo-plan.json examples/safe-plan.json examples/gcp-network-risk-plan.json ./examples/
+COPY examples/kubernetes-safe.json examples/kubernetes-risky.json examples/gcp-identity-risk-plan.json ./examples/
 
 # The scanner needs no packages, writable application files, or root privileges.
 USER 10001:10001

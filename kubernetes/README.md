@@ -184,6 +184,52 @@ kubectl apply -k kubernetes/overlays/dev
 kubectl get all -n cloudmesh-dev
 ```
 
+## Kubernetes JSON scanning
+
+Sentinel can inspect workload JSON offline, without kubectl or a cluster:
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kubernetes --fail-on medium
+python3 cloudmesh_sentinel/cli.py examples/kubernetes-risky.json --input-kind kubernetes --format markdown --fail-on high
+```
+
+The safe fixture returns zero findings. The risky fixture returns HIGH and
+MEDIUM findings and exits 1. These are scanner inputs, not complete deployment
+templates; use the existing Kustomize files to deploy the lab.
+
+Supported inputs are a single Pod, Deployment, StatefulSet, DaemonSet,
+ReplicaSet, Job, or CronJob, or a Kubernetes `List` of those resources. Supply
+JSON explicitly with `--input-kind kubernetes`; YAML parsing is not included.
+Unsupported kinds, empty Lists, Windows workloads, and missing container lists
+produce an input error (exit 2), preventing an unsupported file from appearing
+to pass. This is not a complete Kubernetes schema validator.
+
+HIGH findings cover host network/PID/IPC access, hostPath volumes, privileged
+containers, privilege escalation not explicitly disabled, missing/false
+runAsNonRoot, and explicit root UID 0. MEDIUM findings cover token mounting not
+explicitly disabled in the pod, writable container roots, missing ALL capability
+drop, added capabilities, and missing/unconfined seccomp profiles.
+
+Regular, init, and ephemeral containers are checked individually. Container
+runAsNonRoot, runAsUser, and seccomp settings override pod-level values; an
+unsafe sidecar cannot be hidden by a safe container. Each finding names the
+kind, namespace, workload, container group, and container where applicable.
+
+This is CloudMesh's conservative Linux baseline, not a complete Pod Security
+Standards implementation. Token findings do not resolve ServiceAccount defaults;
+Localhost seccomp profiles are accepted without checking node files. Admission
+mutation, actual image users, networking reachability, RBAC, and runtime behavior
+are not evaluated. Existing text-based Kustomize validation remains separate.
+The JSON scanner does not automatically scan the YAML lab manifests.
+
+GitHub Actions checks safe/risky JSON gates. The container job checks the same
+examples inside the image. Regression tests cover unsafe sidecars, inherited
+settings and overrides, init/ephemeral containers, host access, supported kinds,
+invalid input, and text/JSON/Markdown output.
+
+References: [Kubernetes application security checklist](https://kubernetes.io/docs/concepts/security/application-security-checklist/)
+and [security contexts](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
+
 To remove the local lab again:
 
 ```bash

@@ -1,6 +1,6 @@
 # CloudMesh Sentinel
 
-A lightweight Python CLI that scans Terraform plan JSON files for high-risk infrastructure changes before deployment.
+A lightweight Python CLI that scans Terraform plans and Kubernetes workload JSON for infrastructure risks before deployment.
 
 CloudMesh Sentinel is designed for cloud and DevSecOps workflows where catching risky changes early matters—before they reach GCP, AWS, Azure, or any real environment.
 
@@ -13,6 +13,9 @@ CloudMesh Sentinel is designed for cloud and DevSecOps workflows where catching 
 - Cloud Storage buckets without uniform bucket-level access
 - Service accounts assigned broad project roles such as Owner or Editor
 - Project IAM member/binding changes that include public principals
+- Public principals and broad service-account roles inside full GCP IAM policies
+- Creation or replacement of GCP service-account keys
+- Kubernetes container privilege settings, host access, and hardening gaps
 - GKE control planes that allow access from any IPv4 address
 - Resources scheduled for deletion
 - Resources scheduled for replacement
@@ -44,7 +47,7 @@ The scanner can also be packaged as a non-root container with only its source
 and synthetic examples. See the [Docker guide](docs/docker.md) for build/run
 commands, read-only input mounts, and opt-in container tests. A Docker engine
 is required for local container checks; no cloud account is needed. GitHub
-Actions builds the image and runs its six integration tests in a separate job,
+Actions builds the image and runs its seven integration tests in a separate job,
 including external read-only plan inputs and malformed-input handling.
 
 ## Run the tests
@@ -109,6 +112,19 @@ Review reports before sharing: resource names may be sensitive even when the
 raw plan is omitted. See [reporting examples](docs/reports.md).
 
 ## Kubernetes lab
+
+Sentinel now checks individual Kubernetes workloads from JSON:
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kubernetes --fail-on medium
+python3 cloudmesh_sentinel/cli.py examples/kubernetes-risky.json --input-kind kubernetes --format markdown --fail-on high
+```
+
+It checks regular, init, and ephemeral containers separately, including pod-level
+security settings inherited by each container. All three report formats and
+severity gates are supported. See [Kubernetes JSON scanning](kubernetes/README.md#kubernetes-json-scanning)
+for supported workloads, rules, and limits. The existing Kustomize lab validation
+continues to check its specific baseline; the JSON scanner is a separate mode.
 
 CloudMesh also includes a local-first Kubernetes baseline in
 [`kubernetes/`](kubernetes/). It uses Kustomize to separate reusable manifests

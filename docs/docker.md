@@ -40,7 +40,7 @@ may contain secrets; keep them out of the repository and build context.
 ## Security boundaries and tests
 
 The image runs as numeric non-root UID/GID `10001:10001`. It copies only scanner
-source and three named synthetic examples. `.dockerignore` excludes everything
+source and six named synthetic examples. `.dockerignore` excludes everything
 else by default, including Git history, local configuration, and future files.
 The runtime flags above disable networking, writable root storage, Linux
 capabilities, and privilege escalation. They are runtime options, not guarantees
@@ -59,13 +59,14 @@ receive a read-only-filesystem error, and the host fixture must remain unchanged
 Only disposable synthetic fixtures are made readable/writable for those checks;
 never change sensitive input permissions to imitate the tests.
 They never build or pull images. Without
-the environment variable, the normal Python suite skips these six tests;
+the environment variable, the normal Python suite skips these seven tests;
 a passing default suite does not prove the container builds or runs.
 
 ## GitHub Actions
 
 The `Build and test Sentinel container` job builds `cloudmesh-sentinel:ci` on
-an Ubuntu runner and sets `CLOUDMESH_DOCKER_TEST_IMAGE` to enable all six tests.
+an Ubuntu runner and sets `CLOUDMESH_DOCKER_TEST_IMAGE` to enable all seven tests.
+The example tests also exercise Kubernetes JSON scanning and GCP identity rules.
 Build or test failures fail the job. The image remains on the temporary runner:
 there is no registry login, image push, deployment, or cloud credential usage.
 The job has a ten-minute timeout and read-only repository permissions.

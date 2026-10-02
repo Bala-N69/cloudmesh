@@ -69,6 +69,16 @@ jobs:
           test "$status" -eq 1
           cat "$RUNNER_TEMP/cloudmesh-demo-report.md" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Check Kubernetes JSON and GCP identity gates
+        run: |
+          python cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kubernetes --fail-on medium
+          status=0
+          python cloudmesh_sentinel/cli.py examples/kubernetes-risky.json --input-kind kubernetes --format markdown --fail-on high || status=$?
+          test "$status" -eq 1
+          status=0
+          python cloudmesh_sentinel/cli.py examples/gcp-identity-risk-plan.json --format markdown --fail-on high || status=$?
+          test "$status" -eq 1
+
   container:
     name: Build and test Sentinel container
     runs-on: ubuntu-latest

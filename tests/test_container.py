@@ -45,6 +45,16 @@ class TestContainer(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "10001 10001")
 
+    def test_workload_and_identity_examples(self):
+        for fixture, kind, status in [("kubernetes-safe.json", "kubernetes", 0),
+                                      ("kubernetes-risky.json", "kubernetes", 1),
+                                      ("gcp-identity-risk-plan.json", "terraform", 1)]:
+            with self.subTest(fixture=fixture):
+                result = self.run_container("examples/" + fixture, "--input-kind", kind,
+                                            "--format", "json", "--fail-on", "medium")
+                self.assertEqual(result.returncode, status, result.stderr)
+                self.assertEqual(bool(json.loads(result.stdout)["findings"]), bool(status))
+
     def test_external_plan_input(self):
         for content, expected_status in [(' {"resource_changes": []}', 0), ('{invalid', 2)]:
             with self.subTest(content=content), tempfile.TemporaryDirectory() as directory:

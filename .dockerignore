@@ -7,3 +7,6 @@
 !examples/demo-plan.json
 !examples/safe-plan.json
 !examples/gcp-network-risk-plan.json
+!examples/gcp-identity-risk-plan.json
+!examples/kubernetes-safe.json
+!examples/kubernetes-risky.json

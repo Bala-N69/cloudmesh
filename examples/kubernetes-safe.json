@@ -1,0 +1,18 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {"name": "safe-demo", "namespace": "cloudmesh-dev"},
+  "spec": {
+    "template": {
+      "spec": {
+        "automountServiceAccountToken": false,
+        "securityContext": {"runAsNonRoot": true, "runAsUser": 101, "seccompProfile": {"type": "RuntimeDefault"}},
+        "containers": [{
+          "name": "web",
+          "image": "nginxinc/nginx-unprivileged:1.27-alpine",
+          "securityContext": {"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true, "capabilities": {"drop": ["ALL"]}}
+        }]
+      }
+    }
+  }
+}

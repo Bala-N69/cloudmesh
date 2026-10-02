@@ -58,6 +58,31 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
         actions = change.get("actions", [])
         after = change.get("after") or {}
 
+        if resource_type == "google_service_account_key" and "create" in actions:
+            findings.append(("HIGH", address, "Service account key will be created; review long-lived credential usage."))
+
+        if resource_type in {"google_project_iam_policy", "google_storage_bucket_iam_policy"}:
+            policy_data = after.get("policy_data")
+            if policy_data is not None:
+                policy = json.loads(policy_data, object_pairs_hook=reject_duplicate_keys,
+                                    parse_constant=reject_nonfinite_constant)
+                if not isinstance(policy, dict) or not isinstance(policy.get("bindings", []), list):
+                    raise ValueError("Expected IAM policy object with bindings list")
+                public = privileged = False
+                for binding in policy.get("bindings", []):
+                    if not isinstance(binding, dict) or not isinstance(binding.get("members", []), list):
+                        raise ValueError("Expected IAM binding object with members list")
+                    members = binding.get("members", [])
+                    if not all(isinstance(member, str) for member in members):
+                        raise ValueError("Expected IAM members to be strings")
+                    public |= bool(PUBLIC_MEMBERS.intersection(members))
+                    privileged |= (binding.get("role") in PRIVILEGED_PROJECT_ROLES and
+                                   any(member.startswith("serviceAccount:") for member in members))
+                if public:
+                    findings.append(("HIGH", address, "IAM policy includes a public principal."))
+                if privileged and resource_type == "google_project_iam_policy":
+                    findings.append(("HIGH", address, "Service account receives a privileged project IAM role."))
+
         if actions == ["delete"]:
             findings.append(("HIGH", address, "Resource will be deleted."))
 
@@ -145,6 +170,87 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
     return findings
 
 
+def scan_kubernetes(document):
+    """Inspect Linux workload JSON without contacting a cluster."""
+    findings = []
+    supported = {"Pod", "Deployment", "StatefulSet", "DaemonSet", "Job", "CronJob", "ReplicaSet"}
+
+    def inspect(resource):
+        if not isinstance(resource, dict):
+            raise ValueError("Expected Kubernetes resource object")
+        kind = resource.get("kind")
+        if kind == "List":
+            items = resource.get("items")
+            if not isinstance(items, list) or not items:
+                raise ValueError("Kubernetes List must contain resources")
+            for item in items:
+                inspect(item)
+            return
+        if kind not in supported:
+            raise ValueError("Unsupported Kubernetes kind; supply supported workloads only")
+        metadata = resource.get("metadata") or {}
+        name = metadata.get("name")
+        if not isinstance(name, str) or not name:
+            raise ValueError("Kubernetes resource requires metadata.name")
+        address = f"{kind}/{metadata.get('namespace', 'default')}/{name}"
+        spec = resource.get("spec")
+        if kind == "CronJob":
+            spec = spec["jobTemplate"]["spec"]["template"]["spec"]
+        elif kind != "Pod":
+            spec = spec["template"]["spec"]
+        if not isinstance(spec, dict):
+            raise ValueError("Expected workload pod spec")
+        if (spec.get("os") or {}).get("name", "linux") != "linux":
+            raise ValueError("Kubernetes checks currently support Linux workloads only")
+
+        def add(severity, target, message):
+            findings.append((severity, target, message))
+
+        for field in ["hostNetwork", "hostPID", "hostIPC"]:
+            if spec.get(field) is True:
+                add("HIGH", address, f"Pod enables {field}.")
+        for volume in spec.get("volumes") or []:
+            if "hostPath" in volume:
+                add("HIGH", address, "Pod mounts a hostPath volume.")
+        if spec.get("automountServiceAccountToken") is not False:
+            add("MEDIUM", address, "Pod does not explicitly disable service-account token mounting.")
+        pod_security = spec.get("securityContext") or {}
+        containers = spec.get("containers")
+        if not isinstance(containers, list) or not containers:
+            raise ValueError("Pod spec requires a nonempty containers list")
+        for group in ["containers", "initContainers", "ephemeralContainers"]:
+            entries = spec.get(group, [])
+            if not isinstance(entries, list):
+                raise ValueError("Expected container list")
+            for container in entries:
+                name = container.get("name")
+                if not isinstance(name, str) or not name:
+                    raise ValueError("Container requires a name")
+                target = f"{address}/{group}/{name}"
+                security = container.get("securityContext") or {}
+                if security.get("privileged") is True:
+                    add("HIGH", target, "Container is privileged.")
+                if security.get("allowPrivilegeEscalation") is not False:
+                    add("HIGH", target, "Container does not explicitly disable privilege escalation.")
+                if security.get("runAsNonRoot", pod_security.get("runAsNonRoot")) is not True:
+                    add("HIGH", target, "Container does not enforce runAsNonRoot.")
+                if security.get("runAsUser", pod_security.get("runAsUser")) == 0:
+                    add("HIGH", target, "Container explicitly selects root UID 0.")
+                if security.get("readOnlyRootFilesystem") is not True:
+                    add("MEDIUM", target, "Container root filesystem is not explicitly read-only.")
+                capabilities = security.get("capabilities") or {}
+                if "ALL" not in (capabilities.get("drop") or []):
+                    add("MEDIUM", target, "Container does not drop ALL Linux capabilities.")
+                if capabilities.get("add"):
+                    add("MEDIUM", target, "Container adds Linux capabilities; review necessity.")
+                seccomp = security.get("seccompProfile", pod_security.get("seccompProfile")) or {}
+                if seccomp.get("type") not in {"RuntimeDefault", "Localhost"}:
+                    add("MEDIUM", target, "Container has no restricted seccomp profile.")
+
+    inspect(document)
+    return findings
+
+
 def reject_duplicate_keys(pairs):
     """Reject ambiguous JSON objects at every nesting level."""
     result = {}
@@ -195,9 +301,11 @@ def markdown_report(findings, threshold: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Scan a Terraform plan JSON file for infrastructure risks."
+        description="Scan Terraform plan or Kubernetes workload JSON for infrastructure risks."
     )
-    parser.add_argument("plan", type=Path, help="Path to Terraform plan JSON")
+    parser.add_argument("plan", type=Path, help="Path to Terraform plan or Kubernetes workload JSON")
+    parser.add_argument("--input-kind", choices=("terraform", "kubernetes"), default="terraform",
+                        help="Input format (default: terraform); Kubernetes requires workload JSON")
     parser.add_argument("--format", choices=("text", "json", "markdown"), default="text")
     parser.add_argument("--fail-on", choices=("none", "medium", "high"), default="none",
                         help="Exit 1 for findings at or above this severity (default: none)")
@@ -207,9 +315,14 @@ def main() -> int:
         with args.plan.open(encoding="utf-8") as file:
             plan = json.load(file, object_pairs_hook=reject_duplicate_keys,
                              parse_constant=reject_nonfinite_constant)
-        if not isinstance(plan, dict) or not isinstance(plan.get("resource_changes", []), list):
-            raise ValueError("Expected a plan object with a resource_changes list")
-        findings = scan_plan(plan)
+        if args.input_kind == "kubernetes":
+            findings = scan_kubernetes(plan)
+        else:
+            if isinstance(plan, dict) and "kind" in plan and "resource_changes" not in plan:
+                raise ValueError("Kubernetes documents require --input-kind kubernetes")
+            if not isinstance(plan, dict) or not isinstance(plan.get("resource_changes", []), list):
+                raise ValueError("Expected a plan object with a resource_changes list")
+            findings = scan_plan(plan)
     except (OSError, ValueError, TypeError, AttributeError, KeyError) as error:
         print(f"CloudMesh Sentinel: unable to scan plan: {error}", file=sys.stderr)
         return 2

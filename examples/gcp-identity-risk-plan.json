@@ -1,0 +1,7 @@
+{
+  "resource_changes": [
+    {"address": "google_project_iam_policy.demo", "type": "google_project_iam_policy", "change": {"actions": ["update"], "after": {"policy_data": "{\"bindings\":[{\"role\":\"roles/viewer\",\"members\":[\"allAuthenticatedUsers\"]},{\"role\":\"roles/editor\",\"members\":[\"serviceAccount:synthetic-identity\"]}]}"}}},
+    {"address": "google_storage_bucket_iam_policy.demo", "type": "google_storage_bucket_iam_policy", "change": {"actions": ["create"], "after": {"policy_data": "{\"bindings\":[{\"role\":\"roles/storage.objectViewer\",\"members\":[\"allUsers\"]}]}"}}},
+    {"address": "google_service_account_key.demo", "type": "google_service_account_key", "change": {"actions": ["create"], "after": {}}}
+  ]
+}
