@@ -1,8 +1,43 @@
 # CloudMesh Sentinel
 
-A lightweight Python CLI that scans Terraform plans and Kubernetes workload JSON for infrastructure risks before deployment.
+Find risky infrastructure settings before deployment.
 
-CloudMesh Sentinel is designed for cloud and DevSecOps workflows where catching risky changes early matters—before they reach GCP, AWS, Azure, or any real environment.
+CloudMesh Sentinel is a lightweight Python CLI for reviewing GCP Terraform plans
+and Kubernetes workload JSON. It highlights public access, excessive permissions,
+and container security gaps so you can investigate them before applying changes.
+
+Use the included examples to learn what risky configurations look like, generate
+reports for code reviews, or add severity-based checks to a CI pipeline.
+The scanner runs locally with Python 3.10+ and the standard library—no cloud
+account, credentials, Terraform installation, or running cluster is needed to
+try the examples. CI tests the project with Python 3.12.
+
+## Quick start
+
+```bash
+git clone https://github.com/Bala-N69/cloudmesh.git
+cd cloudmesh
+
+# Find three HIGH findings in a synthetic Terraform plan.
+python3 cloudmesh_sentinel/cli.py examples/demo-plan.json
+
+# Inspect a Kubernetes workload with unsafe settings.
+python3 cloudmesh_sentinel/cli.py examples/kubernetes-risky.json --input-kind kubernetes
+
+# Compare it with a workload that passes the implemented checks.
+python3 cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kubernetes
+```
+
+The two risky examples print findings; the safe example prints `0 finding(s)`.
+Scans are informational by default. Add `--fail-on high` to exit with a failure
+when HIGH findings are present, or `--format markdown` for a report you can review
+alongside a pull request.
+
+Continue with the [GCP plan lab](terraform/README.md),
+[Kubernetes scanning guide](kubernetes/README.md#kubernetes-json-scanning),
+[reporting examples](docs/reports.md), or [Docker guide](docs/docker.md).
+CloudMesh is a practical DevSecOps learning and review tool; its checks cover
+specific patterns, and a clean report is not a complete security assessment.
 
 ## What it detects
 
