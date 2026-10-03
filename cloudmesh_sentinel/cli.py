@@ -239,6 +239,12 @@ def scan_kubernetes(document):
                 if security.get("readOnlyRootFilesystem") is not True:
                     add("MEDIUM", target, "Container root filesystem is not explicitly read-only.")
                 capabilities = security.get("capabilities") or {}
+                for field in ["drop", "add"]:
+                    values = capabilities.get(field)
+                    if values is not None and (
+                            not isinstance(values, list) or
+                            not all(isinstance(value, str) for value in values)):
+                        raise ValueError(f"Container capabilities.{field} must be a list of strings")
                 if "ALL" not in (capabilities.get("drop") or []):
                     add("MEDIUM", target, "Container does not drop ALL Linux capabilities.")
                 if capabilities.get("add"):

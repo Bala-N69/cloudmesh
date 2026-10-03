@@ -204,6 +204,12 @@ Unsupported kinds, empty Lists, Windows workloads, and missing container lists
 produce an input error (exit 2), preventing an unsupported file from appearing
 to pass. This is not a complete Kubernetes schema validator.
 
+Container capability `add` and `drop` fields must be lists of strings when
+non-null. For example, `"drop": ["ALL"]` is accepted, but `"drop": "ALL"`
+returns input error 2 without a report. Missing/null/empty drop lists still
+produce the missing-ALL finding; `["NOT_ALL"]` does not satisfy it. These
+checks apply to regular, init, and ephemeral containers.
+
 HIGH findings cover host network/PID/IPC access, hostPath volumes, privileged
 containers, privilege escalation not explicitly disabled, missing/false
 runAsNonRoot, and explicit root UID 0. MEDIUM findings cover token mounting not
