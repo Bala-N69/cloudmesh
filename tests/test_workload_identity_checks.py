@@ -63,6 +63,27 @@ class TestWorkloads(unittest.TestCase):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 scan_kubernetes(invalid)
 
+    def test_capabilities_require_string_lists(self):
+        for field in ["drop", "add"]:
+            for invalid in ["ALL", "NOT_ALL", {"ALL": True}, [1], [False], [None]]:
+                with self.subTest(field=field, invalid=invalid):
+                    workload = copy.deepcopy(self.workload)
+                    caps = workload["spec"]["template"]["spec"]["containers"][0]["securityContext"]["capabilities"]
+                    caps[field] = invalid
+                    with self.assertRaisesRegex(ValueError, "capabilities.*list of strings"):
+                        scan_kubernetes(workload)
+
+    def test_capability_lists_preserve_findings(self):
+        caps = self.spec["containers"][0]["securityContext"]["capabilities"]
+        for drop in [None, [], ["NOT_ALL"]]:
+            caps["drop"] = drop
+            self.assertTrue(any("does not drop ALL" in message
+                                for _, _, message in scan_kubernetes(self.workload)))
+        caps.update(drop=["ALL"], add=["NET_ADMIN"])
+        findings = scan_kubernetes(self.workload)
+        self.assertEqual(len(findings), 1)
+        self.assertIn("adds Linux capabilities", findings[0][2])
+
 
 class TestGcpIdentity(unittest.TestCase):
     def plan(self, resource_type, after, actions=None):
