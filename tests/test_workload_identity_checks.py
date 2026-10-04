@@ -84,6 +84,28 @@ class TestWorkloads(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertIn("adds Linux capabilities", findings[0][2])
 
+    def test_user_ids_require_nonnegative_integers(self):
+        for scope in ["pod", "containers", "initContainers", "ephemeralContainers"]:
+            for value in [False, True, "0", -1, 0.0, [], {}]:
+                with self.subTest(scope=scope, value=value):
+                    workload = copy.deepcopy(self.workload)
+                    spec = workload["spec"]["template"]["spec"]
+                    if scope == "pod":
+                        context = spec["securityContext"]
+                    else:
+                        if scope != "containers":
+                            spec[scope] = [copy.deepcopy(spec["containers"][0])]
+                        context = spec[scope][0]["securityContext"]
+                    context["runAsUser"] = value
+                    with self.assertRaisesRegex(ValueError, "runAsUser.*non-negative integer"):
+                        scan_kubernetes(workload)
+
+    def test_valid_user_id_override_and_root_detection(self):
+        self.spec["securityContext"]["runAsUser"] = 0
+        self.assertTrue(any("root UID 0" in message for _, _, message in scan_kubernetes(self.workload)))
+        self.spec["containers"][0]["securityContext"]["runAsUser"] = 101
+        self.assertEqual(scan_kubernetes(self.workload), [])
+
 
 class TestGcpIdentity(unittest.TestCase):
     def plan(self, resource_type, after, actions=None):

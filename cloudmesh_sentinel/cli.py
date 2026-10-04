@@ -170,6 +170,12 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
     return findings
 
 
+def validate_user_id(context):
+    value = context.get("runAsUser")
+    if value is not None and (type(value) is not int or value < 0):
+        raise ValueError("runAsUser must be a non-negative integer")
+
+
 def scan_kubernetes(document):
     """Inspect Linux workload JSON without contacting a cluster."""
     findings = []
@@ -215,6 +221,7 @@ def scan_kubernetes(document):
         if spec.get("automountServiceAccountToken") is not False:
             add("MEDIUM", address, "Pod does not explicitly disable service-account token mounting.")
         pod_security = spec.get("securityContext") or {}
+        validate_user_id(pod_security)
         containers = spec.get("containers")
         if not isinstance(containers, list) or not containers:
             raise ValueError("Pod spec requires a nonempty containers list")
@@ -228,6 +235,7 @@ def scan_kubernetes(document):
                     raise ValueError("Container requires a name")
                 target = f"{address}/{group}/{name}"
                 security = container.get("securityContext") or {}
+                validate_user_id(security)
                 if security.get("privileged") is True:
                     add("HIGH", target, "Container is privileged.")
                 if security.get("allowPrivilegeEscalation") is not False:

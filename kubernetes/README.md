@@ -210,6 +210,12 @@ returns input error 2 without a report. Missing/null/empty drop lists still
 produce the missing-ALL finding; `["NOT_ALL"]` does not satisfy it. These
 checks apply to regular, init, and ephemeral containers.
 
+Explicit non-null `runAsUser` values at pod or container level must be
+non-negative integers. Strings such as `"0"`, booleans, fractions, negative
+values, arrays, and objects produce input error 2. Numeric `0` remains a HIGH
+root-user finding. A valid container UID overrides the pod UID; all explicit
+values are type-checked even when overridden. This does not inspect image users.
+
 HIGH findings cover host network/PID/IPC access, hostPath volumes, privileged
 containers, privilege escalation not explicitly disabled, missing/false
 runAsNonRoot, and explicit root UID 0. MEDIUM findings cover token mounting not
