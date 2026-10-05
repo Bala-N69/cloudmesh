@@ -45,6 +45,14 @@ class TestContainer(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "10001 10001")
 
+    def test_batch_examples(self):
+        for fixture, status in [("batch-safe.json", 0), ("batch-demo.json", 1)]:
+            with self.subTest(fixture=fixture):
+                result = self.run_container("-m", "cloudmesh_sentinel.batch", "examples/" + fixture,
+                                            "--format", "json", "--fail-on", "medium", entrypoint="python")
+                self.assertEqual(result.returncode, status, result.stderr)
+                self.assertEqual(json.loads(result.stdout)["report_type"], "batch")
+
     def test_workload_and_identity_examples(self):
         for fixture, kind, status in [("kubernetes-safe.json", "kubernetes", 0),
                                       ("kubernetes-risky.json", "kubernetes", 1),

@@ -39,6 +39,20 @@ Continue with the [GCP plan lab](terraform/README.md),
 CloudMesh is a practical DevSecOps learning and review tool; its checks cover
 specific patterns, and a clean report is not a complete security assessment.
 
+## Scan multiple files together
+
+Review GCP plans and Kubernetes workloads in one run using an explicit manifest:
+
+```bash
+python3 -m cloudmesh_sentinel.batch examples/batch-demo.json --format markdown --fail-on high
+python3 -m cloudmesh_sentinel.batch examples/batch-safe.json --format json --fail-on medium
+```
+
+The demo combines three files and intentionally exits 1 with findings; the safe
+batch exits 0. Reports keep each finding attached to its source file. Invalid
+input fails the entire batch with exit 2 and no partial report. See the
+[batch guide](docs/batch.md) for manifest format, CI, and Docker usage.
+
 ## What it detects
 
 - Public IPv4/IPv6 ingress firewall rules, including SSH/RDP port ranges and unrestricted TCP
@@ -82,7 +96,7 @@ The scanner can also be packaged as a non-root container with only its source
 and synthetic examples. See the [Docker guide](docs/docker.md) for build/run
 commands, read-only input mounts, and opt-in container tests. A Docker engine
 is required for local container checks; no cloud account is needed. GitHub
-Actions builds the image and runs its seven integration tests in a separate job,
+Actions builds the image and runs its eight integration tests in a separate job,
 including external read-only plan inputs and malformed-input handling.
 
 ## Run the tests
