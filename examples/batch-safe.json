@@ -1,0 +1,6 @@
+{
+  "inputs": [
+    {"path": "safe-plan.json", "kind": "terraform"},
+    {"path": "kubernetes-safe.json", "kind": "kubernetes"}
+  ]
+}

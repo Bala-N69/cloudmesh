@@ -1,0 +1,7 @@
+{
+  "inputs": [
+    {"path": "gcp-identity-risk-plan.json", "kind": "terraform"},
+    {"path": "kubernetes-risky.json", "kind": "kubernetes"},
+    {"path": "kubernetes-safe.json", "kind": "kubernetes"}
+  ]
+}

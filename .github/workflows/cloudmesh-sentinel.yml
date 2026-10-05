@@ -79,6 +79,14 @@ jobs:
           python cloudmesh_sentinel/cli.py examples/gcp-identity-risk-plan.json --format markdown --fail-on high || status=$?
           test "$status" -eq 1
 
+      - name: Validate mixed batch reports
+        run: |
+          python -m cloudmesh_sentinel.batch examples/batch-safe.json --format json --fail-on medium
+          status=0
+          python -m cloudmesh_sentinel.batch examples/batch-demo.json --format markdown --fail-on high > "$RUNNER_TEMP/cloudmesh-batch-report.md" || status=$?
+          test "$status" -eq 1
+          cat "$RUNNER_TEMP/cloudmesh-batch-report.md" >> "$GITHUB_STEP_SUMMARY"
+
   container:
     name: Build and test Sentinel container
     runs-on: ubuntu-latest

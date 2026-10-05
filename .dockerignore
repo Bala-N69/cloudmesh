@@ -2,6 +2,7 @@
 **
 !cloudmesh_sentinel/
 !cloudmesh_sentinel/cli.py
+!cloudmesh_sentinel/batch.py
 !cloudmesh_sentinel/__init__.py
 !examples/
 !examples/demo-plan.json
@@ -10,3 +11,5 @@
 !examples/gcp-identity-risk-plan.json
 !examples/kubernetes-safe.json
 !examples/kubernetes-risky.json
+!examples/batch-demo.json
+!examples/batch-safe.json

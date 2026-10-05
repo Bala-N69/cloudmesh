@@ -313,6 +313,22 @@ def markdown_report(findings, threshold: str) -> str:
     return "\n".join(lines)
 
 
+def scan_file(path: Path, input_kind: str):
+    """Load and scan one file with the same strict parser used by every CLI."""
+    with path.open(encoding="utf-8") as file:
+        plan = json.load(file, object_pairs_hook=reject_duplicate_keys,
+                         parse_constant=reject_nonfinite_constant)
+    if input_kind == "kubernetes":
+        return scan_kubernetes(plan)
+    if input_kind != "terraform":
+        raise ValueError("Unsupported input kind")
+    if isinstance(plan, dict) and "kind" in plan and "resource_changes" not in plan:
+        raise ValueError("Kubernetes documents require --input-kind kubernetes")
+    if not isinstance(plan, dict) or not isinstance(plan.get("resource_changes", []), list):
+        raise ValueError("Expected a plan object with a resource_changes list")
+    return scan_plan(plan)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scan Terraform plan or Kubernetes workload JSON for infrastructure risks."
@@ -326,17 +342,7 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        with args.plan.open(encoding="utf-8") as file:
-            plan = json.load(file, object_pairs_hook=reject_duplicate_keys,
-                             parse_constant=reject_nonfinite_constant)
-        if args.input_kind == "kubernetes":
-            findings = scan_kubernetes(plan)
-        else:
-            if isinstance(plan, dict) and "kind" in plan and "resource_changes" not in plan:
-                raise ValueError("Kubernetes documents require --input-kind kubernetes")
-            if not isinstance(plan, dict) or not isinstance(plan.get("resource_changes", []), list):
-                raise ValueError("Expected a plan object with a resource_changes list")
-            findings = scan_plan(plan)
+        findings = scan_file(args.plan, args.input_kind)
     except (OSError, ValueError, TypeError, AttributeError, KeyError) as error:
         print(f"CloudMesh Sentinel: unable to scan plan: {error}", file=sys.stderr)
         return 2

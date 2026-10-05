@@ -186,6 +186,10 @@ kubectl get all -n cloudmesh-dev
 
 ## Kubernetes JSON scanning
 
+To review several workloads alongside GCP plans, use the [batch scanner](../docs/batch.md).
+Each Kubernetes entry explicitly declares `"kind": "kubernetes"`; reports retain
+the source file and container address, with one severity gate across the batch.
+
 Sentinel can inspect workload JSON offline, without kubectl or a cluster:
 
 ```bash
