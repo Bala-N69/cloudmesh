@@ -16,6 +16,11 @@ on:
 permissions:
   contents: read
 
+# Keep separate event types independent; only superseded PR runs are interrupted.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     name: Run scanner tests
