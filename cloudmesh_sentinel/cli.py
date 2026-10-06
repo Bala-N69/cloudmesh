@@ -95,7 +95,8 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
         if resource_type == "google_compute_instance":
             has_public_ip = any(
                 interface.get("access_config")
-                for interface in after.get("network_interface", [])
+                or interface.get("ipv6_access_config")
+                for interface in after.get("network_interface") or []
             )
             if has_public_ip:
                 findings.append(

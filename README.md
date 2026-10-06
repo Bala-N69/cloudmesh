@@ -56,7 +56,7 @@ input fails the entire batch with exit 2 and no partial report. See the
 ## What it detects
 
 - Public IPv4/IPv6 ingress firewall rules, including SSH/RDP port ranges and unrestricted TCP
-- Compute instances with public IP addresses
+- Compute instances with public IPv4 or IPv6 access configuration
 - Cloud SQL instances that permit public IPv4 addresses
 - Public Google Cloud Storage IAM access
 - Cloud Storage buckets without uniform bucket-level access
