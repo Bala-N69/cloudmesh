@@ -48,6 +48,54 @@ class TestGcpFirewall(unittest.TestCase):
                          [("HIGH", "google_compute_firewall.test", "Resource will be deleted.")])
 
 
+class TestComputeExternalAccess(unittest.TestCase):
+    def plan(self, interfaces, actions=None):
+        return {"resource_changes": [{"address": "google_compute_instance.test",
+            "type": "google_compute_instance", "change": {
+                "actions": actions or ["create"],
+                "after": {"network_interface": interfaces}}}]}
+
+    def test_external_access_once_per_instance(self):
+        for interfaces in [
+            [{"access_config": [{}]}],
+            [{"ipv6_access_config": [{}]}],
+            [{"ipv6_access_config": [{"external_ipv6": "2001:db8::1"}]}],
+            [{"access_config": [{}], "ipv6_access_config": [{}]}],
+            [{}, {"ipv6_access_config": [{}]}, {"access_config": [{}]}],
+        ]:
+            with self.subTest(interfaces=interfaces):
+                self.assertEqual(scan_plan(self.plan(interfaces)), [
+                    ("HIGH", "google_compute_instance.test",
+                     "Compute instance has a public IP address.")])
+
+    def test_private_and_unknown_interfaces(self):
+        for interfaces in [None, [], [{}],
+                           [{"access_config": [], "ipv6_access_config": []}],
+                           [{"access_config": None, "ipv6_access_config": None}],
+                           [{"ipv6_address": "fd20::1"}]]:
+            with self.subTest(interfaces=interfaces):
+                self.assertEqual(scan_plan(self.plan(interfaces)), [])
+
+    def test_deleted_instance_does_not_report_old_external_access(self):
+        plan = self.plan(None, ["delete"])
+        change = plan["resource_changes"][0]["change"]
+        change["before"] = {"network_interface": [{"ipv6_access_config": [{}]}]}
+        change["after"] = None
+        self.assertEqual(scan_plan(plan), [("HIGH", "google_compute_instance.test",
+                                           "Resource will be deleted.")])
+
+    def test_ipv6_cli_severity_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plan.json"
+            path.write_text(json.dumps(self.plan([{"ipv6_access_config": [{}]}])))
+            result = subprocess.run([sys.executable, str(ROOT / "cloudmesh_sentinel/cli.py"),
+                str(path), "--format", "json", "--fail-on", "high"],
+                capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["summary"],
+                             {"total": 1, "MEDIUM": 0, "HIGH": 1})
+
+
 class TestProjectPublicIam(unittest.TestCase):
     def test_public_principals_and_private_bindings(self):
         for resource_type, field in [("google_project_iam_member", "member"),

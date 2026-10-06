@@ -69,6 +69,22 @@ binding produces the existing deletion warning, not a new public-access warning.
 References: [Google provider firewall resource](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_firewall)
 and [Google IAM principals](https://docs.cloud.google.com/iam/docs/principals-overview).
 
+## Compute Engine external IP coverage
+
+The public-IP rule flags a nonempty `access_config` (IPv4) or
+`ipv6_access_config` (IPv6) list on any planned Compute Engine network interface
+as HIGH. An access block is sufficient even when the assigned address is not
+known until apply. Dual-stack instances and multiple external interfaces produce
+one public-IP finding per instance, not one per address.
+
+Missing, null, or empty access lists are not inferred as public. Internal IPv6
+addresses alone do not trigger the rule. Deletion-only changes with no planned
+`after` state produce only the existing deletion warning. This checks planned
+external access configuration, not actual reachability through firewalls or
+routes, and does not resolve Terraform unknown values.
+
+Reference: [Google provider Compute Engine instance](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_instance).
+
 ## Full IAM policies and service-account keys
 
 ```bash
