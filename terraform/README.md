@@ -27,6 +27,22 @@ This deliberately exits 1. In GitHub Actions the safe example must exit 0
 and the risky example must exit exactly 1; a scanner error must fail the job.
 The automated tests check JSON contents and both severity thresholds as well.
 
+## Cloud SQL automated backup review
+
+The scanner emits one MEDIUM finding per `google_sql_database_instance` when
+planned `settings[].backup_configuration[].enabled` is explicitly `false`.
+This is a recovery-coverage review warning, not proof that all backups are
+absent: external backup systems, retained backups, replica topology, and restore
+testing are not evaluated. Missing, null, and unknown values are not inferred
+as disabled. Deletion-only changes with no `after` state receive only the
+existing deletion warning.
+
+This finding fails `--fail-on medium`, but not `--fail-on high` on its own.
+Public IPv4 and replacement findings remain independent. No cloud access is
+needed; the rule only reads the supplied plan JSON.
+
+Reference: [Google provider Cloud SQL backup configuration](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/sql_database_instance#backup_configuration).
+
 ## Output contract
 
 - `--format text` is the existing default human-readable report.
