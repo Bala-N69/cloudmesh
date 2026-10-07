@@ -146,6 +146,14 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
 
         if resource_type == "google_sql_database_instance":
             settings = after.get("settings") or []
+            if any(
+                backup.get("enabled") is False
+                for setting in settings
+                for backup in setting.get("backup_configuration") or []
+            ):
+                findings.append(
+                    ("MEDIUM", address, "Cloud SQL automated backups are explicitly disabled; review recovery coverage.")
+                )
             ip_configuration = settings[0].get("ip_configuration", []) if settings else []
             if ip_configuration and ip_configuration[0].get("ipv4_enabled") is True:
                 findings.append(
