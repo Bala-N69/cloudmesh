@@ -106,6 +106,58 @@ class TestWorkloads(unittest.TestCase):
         self.spec["containers"][0]["securityContext"]["runAsUser"] = 101
         self.assertEqual(scan_kubernetes(self.workload), [])
 
+    def test_security_flags_reject_nonbooleans(self):
+        scopes = {
+            "spec": ["hostNetwork", "hostPID", "hostIPC", "automountServiceAccountToken"],
+            "pod": ["runAsNonRoot"],
+            **{group: ["privileged", "allowPrivilegeEscalation", "runAsNonRoot",
+                       "readOnlyRootFilesystem"]
+               for group in ["containers", "initContainers", "ephemeralContainers"]},
+        }
+        for scope, fields in scopes.items():
+            for field in fields:
+                for value in ["true", "false", 0, 1, [], {}]:
+                    with self.subTest(scope=scope, field=field, value=value):
+                        workload = copy.deepcopy(self.workload)
+                        spec = workload["spec"]["template"]["spec"]
+                        if scope == "spec":
+                            context = spec
+                        elif scope == "pod":
+                            context = spec["securityContext"]
+                            spec["containers"][0]["securityContext"]["runAsNonRoot"] = True
+                        else:
+                            if scope != "containers":
+                                spec[scope] = [copy.deepcopy(spec["containers"][0])]
+                            context = spec[scope][0]["securityContext"]
+                        context[field] = value
+                        with self.assertRaisesRegex(ValueError, field + " must be a boolean"):
+                            scan_kubernetes(workload)
+
+    def test_privileged_boolean_and_null_behavior(self):
+        context = self.spec["containers"][0]["securityContext"]
+        for value in [None, False, True]:
+            context["privileged"] = value
+            findings = scan_kubernetes(self.workload)
+            self.assertEqual(len(findings), 1 if value is True else 0)
+            if value is True:
+                self.assertEqual(findings[0][2], "Container is privileged.")
+
+    def test_invalid_boolean_cli_has_no_partial_report(self):
+        self.spec["hostNetwork"] = True
+        self.spec["containers"][0]["securityContext"]["privileged"] = "true"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workload.json"
+            path.write_text(json.dumps(self.workload), encoding="utf-8")
+            for output_format in ["text", "json", "markdown"]:
+                with self.subTest(output_format=output_format):
+                    result = subprocess.run([sys.executable,
+                        str(ROOT / "cloudmesh_sentinel/cli.py"), str(path),
+                        "--input-kind", "kubernetes", "--format", output_format],
+                        capture_output=True, text=True, timeout=10)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("privileged must be a boolean", result.stderr)
+
 
 class TestGcpIdentity(unittest.TestCase):
     def plan(self, resource_type, after, actions=None):
