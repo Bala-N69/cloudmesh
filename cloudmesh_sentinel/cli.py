@@ -179,6 +179,13 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
     return findings
 
 
+def validate_boolean_fields(context, fields):
+    for field in fields:
+        value = context.get(field)
+        if value is not None and not isinstance(value, bool):
+            raise ValueError(f"{field} must be a boolean")
+
+
 def validate_user_id(context):
     value = context.get("runAsUser")
     if value is not None and (type(value) is not int or value < 0):
@@ -221,6 +228,8 @@ def scan_kubernetes(document):
         def add(severity, target, message):
             findings.append((severity, target, message))
 
+        validate_boolean_fields(spec, ["hostNetwork", "hostPID", "hostIPC",
+                                       "automountServiceAccountToken"])
         for field in ["hostNetwork", "hostPID", "hostIPC"]:
             if spec.get(field) is True:
                 add("HIGH", address, f"Pod enables {field}.")
@@ -230,6 +239,7 @@ def scan_kubernetes(document):
         if spec.get("automountServiceAccountToken") is not False:
             add("MEDIUM", address, "Pod does not explicitly disable service-account token mounting.")
         pod_security = spec.get("securityContext") or {}
+        validate_boolean_fields(pod_security, ["runAsNonRoot"])
         validate_user_id(pod_security)
         containers = spec.get("containers")
         if not isinstance(containers, list) or not containers:
@@ -244,6 +254,8 @@ def scan_kubernetes(document):
                     raise ValueError("Container requires a name")
                 target = f"{address}/{group}/{name}"
                 security = container.get("securityContext") or {}
+                validate_boolean_fields(security, ["privileged", "allowPrivilegeEscalation",
+                                                    "runAsNonRoot", "readOnlyRootFilesystem"])
                 validate_user_id(security)
                 if security.get("privileged") is True:
                     add("HIGH", target, "Container is privileged.")

@@ -226,6 +226,14 @@ runAsNonRoot, and explicit root UID 0. MEDIUM findings cover token mounting not
 explicitly disabled in the pod, writable container roots, missing ALL capability
 drop, added capabilities, and missing/unconfined seccomp profiles.
 
+Security flags must be JSON booleans when non-null: pod `hostNetwork`, `hostPID`,
+`hostIPC`, `automountServiceAccountToken`; pod/container `runAsNonRoot`; and
+container `privileged`, `allowPrivilegeEscalation`, `readOnlyRootFilesystem`.
+Strings (including `"true"`/`"false"`), numbers, arrays, and objects cause input
+error 2 with no report. All container groups are checked, and invalid pod values
+are rejected even when overridden. Missing/null values retain the existing
+baseline findings; this is not a complete Kubernetes schema validator.
+
 Regular, init, and ephemeral containers are checked individually. Container
 runAsNonRoot, runAsUser, and seccomp settings override pod-level values; an
 unsafe sidecar cannot be hidden by a safe container. Each finding names the
