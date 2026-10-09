@@ -226,6 +226,13 @@ runAsNonRoot, and explicit root UID 0. MEDIUM findings cover token mounting not
 explicitly disabled in the pod, writable container roots, missing ALL capability
 drop, added capabilities, and missing/unconfined seccomp profiles.
 
+Pod and container `securityContext` values must be JSON objects when non-null.
+Arrays (including empty arrays), booleans, numbers, and strings cause input
+error 2 with no partial report. This applies to regular, init, and ephemeral
+containers, and pod contexts are validated even when containers override them.
+Omitted/null contexts are treated as absent, retaining existing baseline
+warnings; an empty object remains valid input, not a guarantee of safety.
+
 Security flags must be JSON booleans when non-null: pod `hostNetwork`, `hostPID`,
 `hostIPC`, `automountServiceAccountToken`; pod/container `runAsNonRoot`; and
 container `privileged`, `allowPrivilegeEscalation`, `readOnlyRootFilesystem`.

@@ -179,6 +179,15 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
     return findings
 
 
+def security_context(resource):
+    context = resource.get("securityContext")
+    if context is None:
+        return {}
+    if not isinstance(context, dict):
+        raise ValueError("securityContext must be an object")
+    return context
+
+
 def validate_boolean_fields(context, fields):
     for field in fields:
         value = context.get(field)
@@ -238,7 +247,7 @@ def scan_kubernetes(document):
                 add("HIGH", address, "Pod mounts a hostPath volume.")
         if spec.get("automountServiceAccountToken") is not False:
             add("MEDIUM", address, "Pod does not explicitly disable service-account token mounting.")
-        pod_security = spec.get("securityContext") or {}
+        pod_security = security_context(spec)
         validate_boolean_fields(pod_security, ["runAsNonRoot"])
         validate_user_id(pod_security)
         containers = spec.get("containers")
@@ -253,7 +262,7 @@ def scan_kubernetes(document):
                 if not isinstance(name, str) or not name:
                     raise ValueError("Container requires a name")
                 target = f"{address}/{group}/{name}"
-                security = container.get("securityContext") or {}
+                security = security_context(container)
                 validate_boolean_fields(security, ["privileged", "allowPrivilegeEscalation",
                                                     "runAsNonRoot", "readOnlyRootFilesystem"])
                 validate_user_id(security)

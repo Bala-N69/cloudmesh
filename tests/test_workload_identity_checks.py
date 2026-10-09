@@ -106,6 +106,54 @@ class TestWorkloads(unittest.TestCase):
         self.spec["containers"][0]["securityContext"]["runAsUser"] = 101
         self.assertEqual(scan_kubernetes(self.workload), [])
 
+    def test_security_context_requires_object(self):
+        for scope in ["pod", "containers", "initContainers", "ephemeralContainers"]:
+            for value in [[], [1], False, True, 0, 1, "", "invalid"]:
+                with self.subTest(scope=scope, value=value):
+                    workload = copy.deepcopy(self.workload)
+                    spec = workload["spec"]["template"]["spec"]
+                    if scope == "pod":
+                        target = spec
+                    else:
+                        if scope != "containers":
+                            spec[scope] = [copy.deepcopy(spec["containers"][0])]
+                        target = spec[scope][0]
+                    target["securityContext"] = value
+                    with self.assertRaisesRegex(ValueError, "securityContext must be an object"):
+                        scan_kubernetes(workload)
+
+    def test_absent_null_and_empty_security_contexts_match(self):
+        for scope in ["pod", "containers", "initContainers", "ephemeralContainers"]:
+            workload = copy.deepcopy(self.workload)
+            spec = workload["spec"]["template"]["spec"]
+            if scope == "pod":
+                target = spec
+            else:
+                if scope != "containers":
+                    spec[scope] = [copy.deepcopy(spec["containers"][0])]
+                target = spec[scope][0]
+            target.pop("securityContext", None)
+            expected = scan_kubernetes(workload)
+            for value in [None, {}]:
+                with self.subTest(scope=scope, value=value):
+                    target["securityContext"] = value
+                    self.assertEqual(scan_kubernetes(workload), expected)
+
+    def test_invalid_context_cli_has_no_partial_report(self):
+        self.spec["hostNetwork"] = True
+        self.spec["containers"][0]["securityContext"] = []
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workload.json"
+            path.write_text(json.dumps(self.workload), encoding="utf-8")
+            for output_format in ["text", "json", "markdown"]:
+                result = subprocess.run([sys.executable,
+                    str(ROOT / "cloudmesh_sentinel/cli.py"), str(path),
+                    "--input-kind", "kubernetes", "--format", output_format],
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 2)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("securityContext must be an object", result.stderr)
+
     def test_security_flags_reject_nonbooleans(self):
         scopes = {
             "spec": ["hostNetwork", "hostPID", "hostIPC", "automountServiceAccountToken"],
