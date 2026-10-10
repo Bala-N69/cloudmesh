@@ -43,6 +43,37 @@ class TestGcpFirewall(unittest.TestCase):
                                      "allow": [{"protocol": "all"}]}))
         self.assertEqual(len(result), 1)
 
+    def test_disabled_requires_boolean(self):
+        for patch in [{}, {"direction": "EGRESS"}, {"allow": []}]:
+            for value in ["false", "true", 0, 1, [], {}, [False]]:
+                with self.subTest(patch=patch, value=value):
+                    after = {"source_ranges": ["0.0.0.0/0"],
+                             "allow": [{"protocol": "all"}], "disabled": value, **patch}
+                    with self.assertRaisesRegex(ValueError, "disabled must be a boolean"):
+                        scan_plan(firewall(after))
+
+    def test_disabled_boolean_and_null_behavior(self):
+        for value, count in [(True, 0), (False, 1), (None, 1)]:
+            with self.subTest(value=value):
+                result = scan_plan(firewall({"source_ranges": ["::/0"],
+                    "allow": [{"protocol": "all"}], "disabled": value}))
+                self.assertEqual(len(result), count)
+
+    def test_invalid_disabled_cli_rejects_without_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plan.json"
+            path.write_text(json.dumps(firewall({"source_ranges": ["0.0.0.0/0"],
+                "allow": [{"protocol": "all"}], "disabled": "false"},
+                ["delete", "create"])), encoding="utf-8")
+            for output_format in ["text", "json", "markdown"]:
+                with self.subTest(output_format=output_format):
+                    result = subprocess.run([sys.executable,
+                        str(ROOT / "cloudmesh_sentinel/cli.py"), str(path),
+                        "--format", output_format], capture_output=True, text=True, timeout=10)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("disabled must be a boolean", result.stderr)
+
     def test_deleted_firewall_only_reports_deletion(self):
         self.assertEqual(scan_plan(firewall(None, ["delete"])),
                          [("HIGH", "google_compute_firewall.test", "Resource will be deleted.")])
