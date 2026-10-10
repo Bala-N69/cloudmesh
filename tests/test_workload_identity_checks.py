@@ -63,6 +63,44 @@ class TestWorkloads(unittest.TestCase):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 scan_kubernetes(invalid)
 
+    def test_capabilities_require_object_in_all_container_groups(self):
+        for group in ["containers", "initContainers", "ephemeralContainers"]:
+            for value in [[], ["ALL"], "", "ALL", False, True, 0, 1]:
+                with self.subTest(group=group, value=value):
+                    workload = copy.deepcopy(self.workload)
+                    spec = workload["spec"]["template"]["spec"]
+                    if group != "containers":
+                        spec[group] = [copy.deepcopy(spec["containers"][0])]
+                    spec[group][0]["securityContext"]["capabilities"] = value
+                    with self.assertRaisesRegex(ValueError, "capabilities must be an object"):
+                        scan_kubernetes(workload)
+
+    def test_absent_null_empty_capabilities_keep_warning(self):
+        context = self.spec["containers"][0]["securityContext"]
+        context.pop("capabilities")
+        expected = scan_kubernetes(self.workload)
+        self.assertEqual(len(expected), 1)
+        self.assertIn("does not drop ALL", expected[0][2])
+        for value in [None, {}]:
+            context["capabilities"] = value
+            self.assertEqual(scan_kubernetes(self.workload), expected)
+
+    def test_invalid_capabilities_cli_has_no_partial_report(self):
+        self.spec["hostNetwork"] = True
+        self.spec["containers"][0]["securityContext"]["capabilities"] = []
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "workload.json"
+            path.write_text(json.dumps(self.workload), encoding="utf-8")
+            for output_format in ["text", "json", "markdown"]:
+                with self.subTest(output_format=output_format):
+                    result = subprocess.run([sys.executable,
+                        str(ROOT / "cloudmesh_sentinel/cli.py"), str(path),
+                        "--input-kind", "kubernetes", "--format", output_format],
+                        capture_output=True, text=True, timeout=10)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("capabilities must be an object", result.stderr)
+
     def test_capabilities_require_string_lists(self):
         for field in ["drop", "add"]:
             for invalid in ["ALL", "NOT_ALL", {"ALL": True}, [1], [False], [None]]:

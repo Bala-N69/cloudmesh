@@ -233,6 +233,12 @@ containers, and pod contexts are validated even when containers override them.
 Omitted/null contexts are treated as absent, retaining existing baseline
 warnings; an empty object remains valid input, not a guarantee of safety.
 
+Container `securityContext.capabilities` must also be an object when non-null.
+Arrays, strings, numbers, and booleans cause input error 2 with no partial
+report, including in init and ephemeral containers. Missing/null values and
+empty objects retain the existing missing-`ALL` warning. The `add` and `drop`
+fields still require lists of strings; this does not validate capability names.
+
 Security flags must be JSON booleans when non-null: pod `hostNetwork`, `hostPID`,
 `hostIPC`, `automountServiceAccountToken`; pod/container `runAsNonRoot`; and
 container `privileged`, `allowPrivilegeEscalation`, `readOnlyRootFilesystem`.

@@ -69,6 +69,13 @@ values need manual review. Existing minimal fixtures without a protocol are
 treated as TCP for compatibility. Inputs are assumed to be Terraform-shaped
 JSON; this is not a complete Terraform schema validator.
 
+Explicit non-null firewall `disabled` values must be JSON booleans. Strings
+such as `"false"`, numbers, arrays, and objects cause input error 2 with no
+report, rather than potentially hiding a public-ingress warning. Only `true`
+skips the rule as disabled. Missing/null values retain the existing behavior:
+the scanner evaluates explicit public ranges but does not resolve unknown
+Terraform values. Validation also applies to egress and deny-only rules.
+
 The other scanner rules cover public compute addresses, storage IAM, broad
 service-account roles, Cloud SQL public IPv4, GKE control-plane exposure, and
 resource deletion/replacement. These are a limited set of heuristics, not a

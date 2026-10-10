@@ -12,8 +12,9 @@ SEVERITY_RANK = {"MEDIUM": 1, "HIGH": 2}
 
 def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, str]]:
     """Inspect explicit public ingress ranges; unknown sources are not inferred."""
+    validate_boolean_fields(after, ["disabled"])
     rules = after.get("allow") or []
-    if after.get("disabled") or after.get("direction") == "EGRESS" or not rules:
+    if after.get("disabled") is True or after.get("direction") == "EGRESS" or not rules:
         return []
     public_ranges = set()
     for source in after.get("source_ranges") or []:
@@ -276,7 +277,11 @@ def scan_kubernetes(document):
                     add("HIGH", target, "Container explicitly selects root UID 0.")
                 if security.get("readOnlyRootFilesystem") is not True:
                     add("MEDIUM", target, "Container root filesystem is not explicitly read-only.")
-                capabilities = security.get("capabilities") or {}
+                capabilities = security.get("capabilities")
+                if capabilities is None:
+                    capabilities = {}
+                elif not isinstance(capabilities, dict):
+                    raise ValueError("Container capabilities must be an object")
                 for field in ["drop", "add"]:
                     values = capabilities.get(field)
                     if values is not None and (
