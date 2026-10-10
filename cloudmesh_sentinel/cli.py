@@ -276,7 +276,11 @@ def scan_kubernetes(document):
                     add("HIGH", target, "Container explicitly selects root UID 0.")
                 if security.get("readOnlyRootFilesystem") is not True:
                     add("MEDIUM", target, "Container root filesystem is not explicitly read-only.")
-                capabilities = security.get("capabilities") or {}
+                capabilities = security.get("capabilities")
+                if capabilities is None:
+                    capabilities = {}
+                elif not isinstance(capabilities, dict):
+                    raise ValueError("Container capabilities must be an object")
                 for field in ["drop", "add"]:
                     values = capabilities.get(field)
                     if values is not None and (
