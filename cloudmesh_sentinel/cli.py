@@ -189,6 +189,17 @@ def security_context(resource):
     return context
 
 
+def validate_seccomp_profile(context):
+    profile = context.get("seccompProfile")
+    if profile is None:
+        return
+    if not isinstance(profile, dict):
+        raise ValueError("seccompProfile must be an object")
+    profile_type = profile.get("type")
+    if profile_type is not None and not isinstance(profile_type, str):
+        raise ValueError("seccompProfile.type must be a string")
+
+
 def validate_boolean_fields(context, fields):
     for field in fields:
         value = context.get(field)
@@ -249,6 +260,7 @@ def scan_kubernetes(document):
         if spec.get("automountServiceAccountToken") is not False:
             add("MEDIUM", address, "Pod does not explicitly disable service-account token mounting.")
         pod_security = security_context(spec)
+        validate_seccomp_profile(pod_security)
         validate_boolean_fields(pod_security, ["runAsNonRoot"])
         validate_user_id(pod_security)
         containers = spec.get("containers")
@@ -264,6 +276,7 @@ def scan_kubernetes(document):
                     raise ValueError("Container requires a name")
                 target = f"{address}/{group}/{name}"
                 security = security_context(container)
+                validate_seccomp_profile(security)
                 validate_boolean_fields(security, ["privileged", "allowPrivilegeEscalation",
                                                     "runAsNonRoot", "readOnlyRootFilesystem"])
                 validate_user_id(security)
