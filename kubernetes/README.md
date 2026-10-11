@@ -259,6 +259,14 @@ mutation, actual image users, networking reachability, RBAC, and runtime behavio
 are not evaluated. Existing text-based Kustomize validation remains separate.
 The JSON scanner does not automatically scan the YAML lab manifests.
 
+Non-null `seccompProfile` values must be objects, with a string `type` when
+non-null. Malformed pod profiles are rejected even if containers override them;
+regular, init, and ephemeral container profiles are also validated. Invalid
+shapes cause input error 2 with no partial report. Missing/null/empty profiles
+and missing/null/unrecognized type names retain the existing MEDIUM finding
+when selected as the effective profile. This validates input shape, not the
+profile's contents or availability on a node.
+
 GitHub Actions checks safe/risky JSON gates. The container job checks the same
 examples inside the image. Regression tests cover unsafe sidecars, inherited
 settings and overrides, init/ephemeral containers, host access, supported kinds,
