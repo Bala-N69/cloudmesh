@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import sys
 from ipaddress import ip_network
 from pathlib import Path
@@ -66,7 +67,8 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
             policy_data = after.get("policy_data")
             if policy_data is not None:
                 policy = json.loads(policy_data, object_pairs_hook=reject_duplicate_keys,
-                                    parse_constant=reject_nonfinite_constant)
+                                    parse_constant=reject_nonfinite_constant,
+                                    parse_float=parse_finite_float)
                 if not isinstance(policy, dict) or not isinstance(policy.get("bindings", []), list):
                     raise ValueError("Expected IAM policy object with bindings list")
                 public = privileged = False
@@ -198,6 +200,14 @@ def validate_seccomp_profile(context):
     profile_type = profile.get("type")
     if profile_type is not None and not isinstance(profile_type, str):
         raise ValueError("seccompProfile.type must be a string")
+    local_path = profile.get("localhostProfile")
+    if profile_type == "Localhost":
+        if (not isinstance(local_path, str) or not local_path.strip()
+                or local_path.startswith("/") or ".." in local_path.split("/")
+                or "\x00" in local_path or not any(part not in ("", ".") for part in local_path.split("/"))):
+            raise ValueError("seccompProfile.localhostProfile must name a relative profile path without parent traversal")
+    elif local_path is not None:
+        raise ValueError("seccompProfile.localhostProfile requires type Localhost")
 
 
 def validate_boolean_fields(context, fields):
@@ -329,6 +339,13 @@ def reject_nonfinite_constant(value):
     raise ValueError("Invalid JSON numeric constant; NaN and Infinity are not permitted")
 
 
+def parse_finite_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("JSON number exceeds finite floating-point range")
+    return number
+
+
 def markdown_cell(value: str) -> str:
     """Encode punctuation so plan content cannot introduce Markdown or HTML."""
     return "".join(
@@ -365,7 +382,8 @@ def scan_file(path: Path, input_kind: str):
     """Load and scan one file with the same strict parser used by every CLI."""
     with path.open(encoding="utf-8") as file:
         plan = json.load(file, object_pairs_hook=reject_duplicate_keys,
-                         parse_constant=reject_nonfinite_constant)
+                         parse_constant=reject_nonfinite_constant,
+                         parse_float=parse_finite_float)
     if input_kind == "kubernetes":
         return scan_kubernetes(plan)
     if input_kind != "terraform":

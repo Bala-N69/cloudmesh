@@ -5,13 +5,14 @@ from pathlib import Path
 import sys
 
 from .cli import (SEVERITY_RANK, markdown_cell, markdown_report,
-                  reject_duplicate_keys, reject_nonfinite_constant, scan_file)
+                  reject_duplicate_keys, reject_nonfinite_constant, parse_finite_float, scan_file)
 
 
 def load_inputs(manifest):
     with manifest.open(encoding="utf-8") as stream:
         document = json.load(stream, object_pairs_hook=reject_duplicate_keys,
-                             parse_constant=reject_nonfinite_constant)
+                             parse_constant=reject_nonfinite_constant,
+                             parse_float=parse_finite_float)
     if not isinstance(document, dict) or set(document) != {"inputs"}:
         raise ValueError("Batch manifest must contain only an inputs list")
     entries = document["inputs"]

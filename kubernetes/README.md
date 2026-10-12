@@ -259,6 +259,10 @@ mutation, actual image users, networking reachability, RBAC, and runtime behavio
 are not evaluated. Existing text-based Kustomize validation remains separate.
 The JSON scanner does not automatically scan the YAML lab manifests.
 
+The shared JSON parser rejects overflowing decimal/exponent values such as
+`1e999` anywhere in the input with exit code 2 and no partial report, including
+batch scans. Finite numbers retain normal Python float precision.
+
 Non-null `seccompProfile` values must be objects, with a string `type` when
 non-null. Malformed pod profiles are rejected even if containers override them;
 regular, init, and ephemeral container profiles are also validated. Invalid
@@ -280,3 +284,17 @@ To remove the local lab again:
 ```bash
 kubectl delete -k kubernetes/overlays/dev
 ```
+
+### Local seccomp profile validation
+
+When `seccompProfile.type` is `Localhost`, the JSON scanner requires a nonempty
+`localhostProfile` naming a relative path, such as `profiles/allow.json`. Missing
+paths, invalid value types, absolute paths, parent traversal (`..` components),
+and NUL characters are rejected. Other profile types cannot specify a non-null
+`localhostProfile`. This applies to pod, regular, init, and ephemeral container
+contexts, including pod settings inherited by containers.
+
+Invalid input exits with code 2 and no partial report in single-file and batch
+scans. The offline scanner validates the path only; it cannot confirm that the
+profile exists on a cluster node or inspect its syscall restrictions. See the
+[Kubernetes seccomp documentation](https://kubernetes.io/docs/reference/node/seccomp/).
