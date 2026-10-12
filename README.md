@@ -55,6 +55,12 @@ input fails the entire batch with exit 2 and no partial report. See the
 
 ## What it detects
 
+Input validation rejects numeric overflow such as `1e999`, as well as literal
+NaN/Infinity, with exit code 2 and no partial report. This applies to single
+inputs, batch manifests and inputs, and embedded IAM policy JSON. Ordinary
+finite decimals retain Python float precision; this is not arbitrary-precision
+numeric validation.
+
 - Public IPv4/IPv6 ingress firewall rules, including SSH/RDP port ranges and unrestricted TCP
 - Compute instances with public IPv4 or IPv6 access configuration
 - Cloud SQL instances that permit public IPv4 addresses
@@ -173,7 +179,9 @@ python3 cloudmesh_sentinel/cli.py examples/kubernetes-risky.json --input-kind ku
 It checks regular, init, and ephemeral containers separately, including pod-level
 security settings inherited by each container. All three report formats and
 severity gates are supported. See [Kubernetes JSON scanning](kubernetes/README.md#kubernetes-json-scanning)
-for supported workloads, rules, and limits. The existing Kustomize lab validation
+for supported workloads, rules, and limits. Local seccomp profiles must specify a valid relative `localhostProfile` path;
+malformed profiles fail with exit 2 instead of producing a clean report.
+The offline scanner cannot verify node-local profile files. The existing Kustomize lab validation
 continues to check its specific baseline; the JSON scanner is a separate mode.
 
 CloudMesh also includes a local-first Kubernetes baseline in
