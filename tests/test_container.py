@@ -27,6 +27,20 @@ class TestContainer(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--fail-on", result.stdout)
 
+    def test_comparison_keeps_unchanged_high_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "report.json"
+            report.write_text(json.dumps({"schema_version": 1,
+                "summary": {"total": 1, "HIGH": 1, "MEDIUM": 0},
+                "findings": [{"severity": "HIGH", "address": "demo", "message": "risk"}]}))
+            report.chmod(0o644)
+            result = self.run_container("-m", "cloudmesh_sentinel.compare",
+                "/input/plan.json", "/input/plan.json", "--format", "json", "--fail-on", "high",
+                entrypoint="python", plan_path=report)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["summary"],
+                             {"new": 0, "resolved": 0, "unchanged": 1, "current_total": 1})
+
     def test_safe_plan_passes(self):
         result = self.run_container("examples/safe-plan.json", "--format", "json",
                                     "--fail-on", "medium")
