@@ -124,7 +124,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up kubectl
-        uses: Azure/setup-kubectl@v5.1.0
+        uses: Azure/setup-kubectl@v5.2.0
 
       - name: Validate Kustomize development overlay
         run: bash scripts/validate-kubernetes.sh
