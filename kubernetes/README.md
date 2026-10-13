@@ -1,5 +1,9 @@
 # Kubernetes lab
 
+Saved Kubernetes JSON scan reports can be compared for new, resolved, and
+unchanged findings using the [comparison command](../docs/comparison.md).
+Regular scanning and all existing security gates remain unchanged.
+
 This directory contains a secure, local-first Kubernetes deployment for
 CloudMesh. It is a learning and validation environment: applying it requires a
 cluster you control, but creating or reading these files does not use a cloud

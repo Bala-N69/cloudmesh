@@ -1,5 +1,9 @@
 # Reviewing scan reports
 
+For changes between two saved JSON reports, see the
+[before-and-after comparison guide](comparison.md). Unchanged risks still count
+toward the comparison's severity gate.
+
 Sentinel supports `text` (default), `json`, and `markdown`. All formats use the
 same findings and severity thresholds. Markdown is intended for human review;
 JSON remains the structured interface for other tools.

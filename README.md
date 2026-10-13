@@ -53,6 +53,18 @@ batch exits 0. Reports keep each finding attached to its source file. Invalid
 input fails the entire batch with exit 2 and no partial report. See the
 [batch guide](docs/batch.md) for manifest format, CI, and Docker usage.
 
+## Compare before-and-after reports
+
+Review **new, resolved, and unchanged findings** in saved GCP or Kubernetes
+reports, including mixed batches:
+
+```bash
+python3 -m cloudmesh_sentinel.compare before.json after.json --format markdown --fail-on high
+```
+
+Gates count all current findings, including unchanged risks. See the
+[comparison guide](docs/comparison.md) for a runnable demo and matching limits.
+
 ## What it detects
 
 Input validation rejects numeric overflow such as `1e999`, as well as literal
