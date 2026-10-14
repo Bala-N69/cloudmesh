@@ -56,7 +56,8 @@ input fails the entire batch with exit 2 and no partial report. See the
 ## Compare before-and-after reports
 
 Review **new, resolved, and unchanged findings** in saved GCP or Kubernetes
-reports, including mixed batches:
+reports, including mixed batches. Severity and per-file summaries show where
+current HIGH and MEDIUM risks remain, including unchanged findings:
 
 ```bash
 python3 -m cloudmesh_sentinel.compare before.json after.json --format markdown --fail-on high
