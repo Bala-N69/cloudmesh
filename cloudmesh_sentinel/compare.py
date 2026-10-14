@@ -82,7 +82,23 @@ def compare_reports(before, after, threshold="none"):
               "unchanged": expand(old & current)}
     blocked = threshold != "none" and any(
         SEVERITY_RANK[key[2]] >= SEVERITY_RANK[threshold.upper()] for key in current)
+    by_severity = {level: {group: sum(item["severity"] == level for item in entries)
+                          for group, entries in groups.items()}
+                   for level in ("HIGH", "MEDIUM")}
+    for counts in by_severity.values():
+        counts["current_total"] = counts["new"] + counts["unchanged"]
+    files = []
+    for source, kind in sorted(after_scope.items()):
+        file_groups = {group: [item for item in entries if item["source"] == source]
+                       for group, entries in groups.items()}
+        counts = {group: len(entries) for group, entries in file_groups.items()}
+        counts["current_total"] = counts["new"] + counts["unchanged"]
+        files.append({"source": source, "kind": kind, "summary": counts,
+                      "current_severity": {level: sum(item["severity"] == level
+                          for group in ("new", "unchanged") for item in file_groups[group])
+                          for level in ("HIGH", "MEDIUM")}})
     return {"schema_version": 1, "report_type": "comparison", "fail_on": threshold,
+            "by_severity": by_severity, "files": files,
             "gate": "informational" if threshold == "none" else ("fail" if blocked else "pass"),
             "summary": {**{group: len(items) for group, items in groups.items()},
                         "current_total": sum(current.values())}, **groups}
@@ -94,6 +110,27 @@ def render(result, output):
     lines = ["# CloudMesh Sentinel comparison" if output == "markdown" else "CloudMesh Sentinel comparison",
              "", f"Gate: {result['gate']} (all current findings; threshold: {result['fail_on']})", "",
              ", ".join(f"{key}: {value}" for key, value in result["summary"].items())]
+    lines += ["", "## Severity summary" if output == "markdown" else "Severity summary"]
+    if output == "markdown":
+        lines += ["", "| Severity | New | Resolved | Unchanged | Current |",
+                  "| --- | --- | --- | --- | --- |"]
+    for level, counts in result["by_severity"].items():
+        values = [str(counts[key]) for key in ("new", "resolved", "unchanged", "current_total")]
+        lines.append("| " + " | ".join([level, *values]) + " |" if output == "markdown"
+                     else f"{level}: " + ", ".join(f"{key}={value}" for key, value in counts.items()))
+    lines += ["", "## File summary" if output == "markdown" else "File summary"]
+    if output == "markdown":
+        lines += ["", "| Source | Kind | New | Resolved | Unchanged | Current HIGH | Current MEDIUM |",
+                  "| --- | --- | --- | --- | --- | --- | --- |"]
+    for entry in result["files"]:
+        source = entry["source"] or "(single report)"
+        values = [source, entry["kind"], *[str(entry["summary"][key])
+                  for key in ("new", "resolved", "unchanged")],
+                  str(entry["current_severity"]["HIGH"]), str(entry["current_severity"]["MEDIUM"])]
+        if output == "markdown":
+            lines.append("| " + " | ".join(markdown_cell(value) for value in values) + " |")
+        else:
+            lines.append(f"{source!r} ({entry['kind']!r}): {entry['summary']}; current severity: {entry['current_severity']}")
     for group in ("new", "resolved", "unchanged"):
         lines += ["", f"## {group.title()}" if output == "markdown" else group.title()]
         if output == "markdown":

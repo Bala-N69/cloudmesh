@@ -45,6 +45,46 @@ class TestCompare(unittest.TestCase):
         self.assertEqual(result["new"][0]["severity"], "MEDIUM")
         self.assertEqual(result["resolved"][0]["severity"], "HIGH")
 
+    def test_severity_summary_counts_duplicate_occurrences(self):
+        self.save(report([HIGH, HIGH]), report([HIGH, MEDIUM]))
+        result = compare_reports(self.before, self.after, "high")
+        self.assertEqual(result["by_severity"], {
+            "HIGH": {"new": 0, "resolved": 1, "unchanged": 1, "current_total": 1},
+            "MEDIUM": {"new": 1, "resolved": 0, "unchanged": 0, "current_total": 1}})
+        self.assertEqual(result["files"][0]["summary"], result["summary"])
+        self.assertEqual(result["gate"], "fail")
+
+    def test_file_summary_includes_clean_files_and_is_sorted(self):
+        before = batch([HIGH], "z.json")
+        before["files"].append({"source": "a.json", "kind": "terraform", "findings": []})
+        before["summary"]["files"] = 2
+        after = copy.deepcopy(before)
+        after["files"][0]["findings"] = [MEDIUM]
+        after["summary"].update(HIGH=0, MEDIUM=1)
+        self.save(before, after)
+        result = compare_reports(self.before, self.after)
+        self.assertEqual([entry["source"] for entry in result["files"]], ["a.json", "z.json"])
+        self.assertEqual(result["files"][0]["summary"],
+                         {"new": 0, "resolved": 0, "unchanged": 0, "current_total": 0})
+        self.assertEqual(result["files"][1]["current_severity"], {"HIGH": 0, "MEDIUM": 1})
+        for key, total in result["summary"].items():
+            self.assertEqual(sum(entry["summary"][key] for entry in result["files"]), total)
+
+    def test_summary_sources_are_escaped(self):
+        self.save(batch([], "<img>|\n\x1b[31m"), batch([HIGH], "<img>|\n\x1b[31m"))
+        result = compare_reports(self.before, self.after)
+        self.assertIn("Severity summary", render(result, "markdown"))
+        self.assertIn("File summary", render(result, "markdown"))
+        self.assertNotIn("<img>", render(result, "markdown"))
+        self.assertNotIn("\x1b", render(result, "text"))
+
+    def test_empty_summary_and_resolved_only_gate(self):
+        for before in [[], [HIGH]]:
+            self.save(report(before), report([]))
+            result = compare_reports(self.before, self.after, "medium")
+            self.assertEqual(result["gate"], "pass")
+            self.assertEqual(result["files"][0]["current_severity"], {"HIGH": 0, "MEDIUM": 0})
+
     def test_gate_counts_unchanged_risks(self):
         for findings, threshold, gate in [([HIGH], "high", "fail"), ([MEDIUM], "high", "pass"),
                 ([MEDIUM], "medium", "fail"), ([HIGH], "none", "informational"), ([], "medium", "pass")]:

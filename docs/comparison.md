@@ -20,6 +20,22 @@ not evidence of real remediation. Reverse the paths for three new HIGH findings
 and exit 1. Compare the risky report with itself for three unchanged HIGH findings
 and exit 1. Temporary reports remain for inspection.
 
+## Review summaries
+
+Text and Markdown comparisons now show a severity table and a file summary
+before detailed findings. Each severity has new, resolved, unchanged, and current
+counts. Every batch source appears, including files with zero findings; file
+rows show change counts and current HIGH/MEDIUM counts, sorted by source name.
+This helps identify which workload needs attention without dropping clean files
+or suppressing unchanged risks.
+
+JSON adds `by_severity` and `files` alongside the existing fields (schema version
+1 remains compatible for consumers accepting additional fields). Each `files`
+entry contains `source`, `kind`, `summary`, and `current_severity`. Single reports
+have one entry with empty source/kind; human output labels it `(single report)`.
+Counts preserve duplicate occurrences and always reconcile with the overall
+summary. Resolved findings do not contribute to current severity counts.
+
 ## Matching and limits
 
 Findings match by exact severity, address, and message; duplicate occurrences

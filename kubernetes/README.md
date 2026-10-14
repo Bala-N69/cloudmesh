@@ -3,6 +3,8 @@
 Saved Kubernetes JSON scan reports can be compared for new, resolved, and
 unchanged findings using the [comparison command](../docs/comparison.md).
 Regular scanning and all existing security gates remain unchanged.
+Comparison summaries include each workload source, its change counts, and
+current HIGH/MEDIUM counts; clean sources remain visible in batch summaries.
 
 This directory contains a secure, local-first Kubernetes deployment for
 CloudMesh. It is a learning and validation environment: applying it requires a
