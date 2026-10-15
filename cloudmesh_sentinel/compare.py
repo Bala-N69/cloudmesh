@@ -82,21 +82,24 @@ def compare_reports(before, after, threshold="none"):
               "unchanged": expand(old & current)}
     blocked = threshold != "none" and any(
         SEVERITY_RANK[key[2]] >= SEVERITY_RANK[threshold.upper()] for key in current)
-    by_severity = {level: {group: sum(item["severity"] == level for item in entries)
-                          for group, entries in groups.items()}
+    # Allocate independent counters per source, then visit each occurrence once.
+    by_severity = {level: {**dict.fromkeys(groups, 0), "current_total": 0}
                    for level in ("HIGH", "MEDIUM")}
-    for counts in by_severity.values():
-        counts["current_total"] = counts["new"] + counts["unchanged"]
-    files = []
-    for source, kind in sorted(after_scope.items()):
-        file_groups = {group: [item for item in entries if item["source"] == source]
-                       for group, entries in groups.items()}
-        counts = {group: len(entries) for group, entries in file_groups.items()}
-        counts["current_total"] = counts["new"] + counts["unchanged"]
-        files.append({"source": source, "kind": kind, "summary": counts,
-                      "current_severity": {level: sum(item["severity"] == level
-                          for group in ("new", "unchanged") for item in file_groups[group])
-                          for level in ("HIGH", "MEDIUM")}})
+    by_source = {source: {"source": source, "kind": kind,
+                         "summary": {**dict.fromkeys(groups, 0), "current_total": 0},
+                         "current_severity": {"HIGH": 0, "MEDIUM": 0}}
+                 for source, kind in after_scope.items()}
+    for group, entries in groups.items():
+        for item in entries:
+            level = item["severity"]
+            entry = by_source[item["source"]]
+            entry["summary"][group] += 1
+            by_severity[level][group] += 1
+            if group != "resolved":
+                entry["summary"]["current_total"] += 1
+                entry["current_severity"][level] += 1
+                by_severity[level]["current_total"] += 1
+    files = [by_source[source] for source in sorted(by_source)]
     return {"schema_version": 1, "report_type": "comparison", "fail_on": threshold,
             "by_severity": by_severity, "files": files,
             "gate": "informational" if threshold == "none" else ("fail" if blocked else "pass"),
