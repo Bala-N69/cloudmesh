@@ -36,6 +36,12 @@ have one entry with empty source/kind; human output labels it `(single report)`.
 Counts preserve duplicate occurrences and always reconcile with the overall
 summary. Resolved findings do not contribute to current severity counts.
 
+Summary counting visits each finding occurrence once instead of rescanning all
+findings for every source. This reduces counting work for large mixed batches;
+sorting and loading the complete reports still require time and memory. Output
+ordering, duplicate counts, and severity gates are unchanged. This is not a
+streaming scanner or a limit on report size.
+
 ## Matching and limits
 
 Findings match by exact severity, address, and message; duplicate occurrences

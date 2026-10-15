@@ -45,6 +45,36 @@ class TestCompare(unittest.TestCase):
         self.assertEqual(result["new"][0]["severity"], "MEDIUM")
         self.assertEqual(result["resolved"][0]["severity"], "HIGH")
 
+    def test_large_batch_summary_matches_independent_counts(self):
+        before_files, after_files = [], []
+        for index in range(250):
+            source = f"workload-{index:03d}.json"
+            old = [HIGH, HIGH, MEDIUM] if index % 2 else []
+            current = [HIGH, MEDIUM, MEDIUM] if index % 3 else []
+            before_files.append({"source": source, "kind": "kubernetes", "findings": old})
+            after_files.append({"source": source, "kind": "kubernetes", "findings": current})
+        def document(files):
+            result = report([finding for entry in files for finding in entry["findings"]])
+            result.pop("findings")
+            result.update(report_type="batch", files=files)
+            result["summary"]["files"] = len(files)
+            return result
+        self.save(document(before_files), document(list(reversed(after_files))))
+        result = compare_reports(self.before, self.after, "high")
+        self.assertEqual(result["gate"], "fail")
+        self.assertEqual(len(result["files"]), 250)
+        for entry in result["files"]:
+            for group in ("new", "resolved", "unchanged"):
+                self.assertEqual(entry["summary"][group],
+                    sum(item["source"] == entry["source"] for item in result[group]))
+            for level in ("HIGH", "MEDIUM"):
+                self.assertEqual(entry["current_severity"][level], sum(
+                    item["source"] == entry["source"] and item["severity"] == level
+                    for group in ("new", "unchanged") for item in result[group]))
+        for key, count in result["summary"].items():
+            self.assertEqual(sum(entry["summary"][key] for entry in result["files"]), count)
+            self.assertEqual(sum(entry[key] for entry in result["by_severity"].values()), count)
+
     def test_severity_summary_counts_duplicate_occurrences(self):
         self.save(report([HIGH, HIGH]), report([HIGH, MEDIUM]))
         result = compare_reports(self.before, self.after, "high")
