@@ -38,6 +38,36 @@ class TestGcpFirewall(unittest.TestCase):
             with self.subTest(patch=patch):
                 self.assertEqual(scan_plan(firewall({**base, **patch})), [])
 
+    def test_invalid_port_lists_are_rejected(self):
+        for protocol in ["tcp", "6", "udp", "all"]:
+            for ports in ["22", "3389", 22, False, {}, [22], [None], ["22", False]]:
+                with self.subTest(protocol=protocol, ports=ports):
+                    with self.assertRaisesRegex(ValueError, "allow.ports must be a list of strings"):
+                        scan_plan(firewall({"source_ranges": ["0.0.0.0/0"],
+                            "allow": [{"protocol": protocol, "ports": ports}]}))
+
+    def test_valid_port_lists_preserve_admin_severity(self):
+        for ports, severity in [(None, "HIGH"), ([], "HIGH"), (["22"], "HIGH"),
+                                (["3389"], "HIGH"), (["20-25"], "HIGH"), (["443"], "MEDIUM")]:
+            with self.subTest(ports=ports):
+                findings = scan_plan(firewall({"source_ranges": ["::/0"],
+                    "allow": [{"protocol": "tcp", "ports": ports}]}))
+                self.assertEqual(findings[0][0], severity)
+
+    def test_invalid_ports_cli_has_no_partial_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plan.json"
+            path.write_text(json.dumps(firewall({"source_ranges": ["0.0.0.0/0"],
+                "allow": [{"protocol": "tcp", "ports": "22"}]},
+                ["delete", "create"])), encoding="utf-8")
+            for output in ["text", "json", "markdown"]:
+                result = subprocess.run([sys.executable, str(ROOT / "cloudmesh_sentinel/cli.py"),
+                    str(path), "--format", output, "--fail-on", "high"],
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 2)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("allow.ports must be a list of strings", result.stderr)
+
     def test_equivalent_ipv6_ranges_are_deduplicated(self):
         result = scan_plan(firewall({"source_ranges": ["::/0", "0:0:0:0:0:0:0:0/0"],
                                      "allow": [{"protocol": "all"}]}))
