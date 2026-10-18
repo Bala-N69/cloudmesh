@@ -17,6 +17,40 @@ def firewall(after, actions=None):
 
 
 class TestGcpFirewall(unittest.TestCase):
+    def test_invalid_source_ranges_fail_closed(self):
+        for sources in ["0.0.0.0/0", "::/0", {}, False, 0, [0], [None],
+                        ["not-a-network"], ["10.0.0.0/99"], ["::/129"],
+                        ["0.0.0.0/0", "invalid"]]:
+            with self.subTest(sources=sources), self.assertRaisesRegex(ValueError, "source_ranges"):
+                scan_plan(firewall({"source_ranges": sources, "allow": [{"protocol": "all"}]}))
+
+    def test_source_range_normalization_and_private_ranges(self):
+        for sources, count in [(None, 0), ([], 0), (["10.0.0.0/8", "fd00::/8"], 0),
+                               (["192.0.2.1"], 0), (["0.0.0.0/0", "1.2.3.4/0"], 1),
+                               (["::/0", "0:0:0:0:0:0:0:0/0"], 1)]:
+            with self.subTest(sources=sources):
+                self.assertEqual(len(scan_plan(firewall({"source_ranges": sources,
+                    "allow": [{"protocol": "all"}]}))), count)
+
+    def test_invalid_sources_cli_and_batch_no_partial_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plan.json"
+            path.write_text(json.dumps(firewall({"source_ranges": "0.0.0.0/0",
+                "allow": [{"protocol": "all"}]}, ["delete", "create"])))
+            manifest = Path(directory) / "batch.json"
+            manifest.write_text(json.dumps({"inputs": [
+                {"path": str(ROOT / "examples/safe-plan.json"), "kind": "terraform"},
+                {"path": "plan.json", "kind": "terraform"}]}))
+            for command in [["-m", "cloudmesh_sentinel.cli", str(path)],
+                            ["-m", "cloudmesh_sentinel.batch", str(manifest)]]:
+                for output in ["text", "json", "markdown"]:
+                    with self.subTest(command=command, output=output):
+                        result = subprocess.run([sys.executable, *command, "--format", output],
+                            cwd=ROOT, capture_output=True, text=True, timeout=10)
+                        self.assertEqual(result.returncode, 2)
+                        self.assertEqual(result.stdout, "")
+                        self.assertIn("source_ranges", result.stderr)
+
     def test_public_rule_matrix(self):
         for protocol, ports, severity in [
             ("tcp", ["20-25"], "HIGH"), ("6", ["3380-3390"], "HIGH"),

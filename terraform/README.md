@@ -55,6 +55,14 @@ Reference: [Google provider Cloud SQL backup configuration](https://registry.ter
 
 ## Firewall coverage and limits
 
+Evaluated ingress allow rules require non-null `source_ranges` to be a list of
+valid IP-network strings. A scalar such as `"0.0.0.0/0"`, non-string entries,
+or invalid IP/prefix values cause input error 2 with no partial report, including
+batch scans. Error messages do not echo the supplied range. Missing/null/empty
+lists remain unknown and are not inferred as public. Host bits are normalized
+as before; equivalent public ranges are deduplicated. Disabled, egress, and
+deny-only rules are still skipped. This does not infer effective reachability.
+
 For evaluated ingress allow rules, non-null `ports` must be a list of strings,
 such as `["22", "443"]`, not a scalar `"22"`. Invalid list shapes or non-string
 members cause input error 2 and no partial report, preventing character-by-character
