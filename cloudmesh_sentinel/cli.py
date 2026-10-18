@@ -18,11 +18,15 @@ def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, 
     if after.get("disabled") is True or after.get("direction") == "EGRESS" or not rules:
         return []
     public_ranges = set()
-    for source in after.get("source_ranges") or []:
+    sources = after.get("source_ranges")
+    if sources is not None and (not isinstance(sources, list)
+                                or not all(isinstance(source, str) for source in sources)):
+        raise ValueError("Firewall source_ranges must be a list of strings")
+    for source in sources or []:
         try:
             network = ip_network(source, strict=False)
-        except (ValueError, TypeError):
-            continue
+        except ValueError as error:
+            raise ValueError("Firewall source_ranges contains an invalid IP network") from error
         if network.prefixlen == 0:
             public_ranges.add(str(network))
 
