@@ -45,6 +45,14 @@ Reference: [Google provider Cloud SQL backup configuration](https://registry.ter
 
 ## Output contract
 
+Explicit resource `change.actions` must be a list of strings. Scalar values
+such as `"delete"`, null, and non-string members cause input error 2, not a
+clean result that misses deletion risk. Single and batch scans emit no partial
+report on this error. Both replacement orderings (`delete, create` and
+`create, delete`) remain HIGH findings. Missing or empty action lists retain
+compatibility with minimal fixtures; this check validates shape, not the full
+Terraform action vocabulary or plan schema.
+
 - `--format text` is the existing default human-readable report.
 - `--format json` emits schema version 1, a summary with `total`, `MEDIUM`,
   and `HIGH` counts, and findings with `severity`, `address`, and `message`.
