@@ -68,7 +68,11 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
         actions = change.get("actions", [])
         if not isinstance(actions, list) or not all(isinstance(action, str) for action in actions):
             raise ValueError("Resource change.actions must be a list of strings")
-        after = change.get("after") or {}
+        after = change.get("after")
+        if after is None:
+            after = {}
+        elif not isinstance(after, dict):
+            raise ValueError("Resource change.after must be an object or null")
 
         if resource_type == "google_service_account_key" and "create" in actions:
             findings.append(("HIGH", address, "Service account key will be created; review long-lived credential usage."))

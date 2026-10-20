@@ -45,6 +45,14 @@ Reference: [Google provider Cloud SQL backup configuration](https://registry.ter
 
 ## Output contract
 
+Resource `change.after` must be an object or null when supplied. Booleans,
+numbers, strings, and arrays (including empty values) cause input error 2
+without a partial report in single or batch scans. This validation applies
+even to resource types without specific scanner rules. Null, missing, and
+empty-object states retain existing behavior; deletion-only resources with
+null state still produce their deletion finding. This checks the state shape,
+not whether all provider-required fields are present or Terraform values resolved.
+
 Explicit resource `change.actions` must be a list of strings. Scalar values
 such as `"delete"`, null, and non-string members cause input error 2, not a
 clean result that misses deletion risk. Single and batch scans emit no partial
