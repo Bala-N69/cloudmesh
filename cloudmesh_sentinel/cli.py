@@ -58,6 +58,17 @@ def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, 
             for source in sorted(public_ranges)]
 
 
+def iam_members(after):
+    member = after.get("member")
+    members = after.get("members")
+    if member is not None and not isinstance(member, str):
+        raise ValueError("IAM member must be a string")
+    if members is not None and (not isinstance(members, list)
+                                or not all(isinstance(value, str) for value in members)):
+        raise ValueError("IAM members must be a list of strings")
+    return set(members or []) | ({member} if member is not None else set())
+
+
 def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
     findings = []
 
@@ -121,7 +132,7 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                 )
 
         if resource_type.startswith("google_storage_bucket_iam_"):
-            members = {after.get("member"), *(after.get("members") or [])}
+            members = iam_members(after)
             if PUBLIC_MEMBERS.intersection(members):
                 findings.append(
                     ("HIGH", address, "Cloud Storage access is public.")
@@ -131,7 +142,7 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
             "google_project_iam_member",
             "google_project_iam_binding",
         }:
-            members = {after.get("member"), *(after.get("members") or [])}
+            members = iam_members(after)
             role = after.get("role")
             if PUBLIC_MEMBERS.intersection(members):
                 findings.append(
