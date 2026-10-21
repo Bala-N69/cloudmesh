@@ -141,6 +141,14 @@ Reference: [Google provider Compute Engine instance](https://registry.terraform.
 
 ## Full IAM policies and service-account keys
 
+Project and storage-bucket IAM member/binding checks validate explicit `member`
+as a string and `members` as a list of strings. A scalar `"allUsers"` in
+`members` now causes input error 2 instead of potentially missing public access.
+Single and batch scans produce no partial report on invalid types. Null/missing
+fields remain unknown; empty lists are accepted. Duplicate principals do not
+duplicate findings. This validates value shapes, not principal syntax or
+effective permissions. Embedded full-policy binding validation remains separate.
+
 ```bash
 python3 cloudmesh_sentinel/cli.py examples/gcp-identity-risk-plan.json --format markdown --fail-on high
 ```
