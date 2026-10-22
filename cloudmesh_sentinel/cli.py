@@ -174,6 +174,11 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
 
         if resource_type == "google_sql_database_instance":
             settings = after.get("settings") or []
+            for setting in settings:
+                for backup in setting.get("backup_configuration") or []:
+                    validate_boolean_fields(backup, ["enabled"])
+                for configuration in setting.get("ip_configuration") or []:
+                    validate_boolean_fields(configuration, ["ipv4_enabled"])
             if any(
                 backup.get("enabled") is False
                 for setting in settings
