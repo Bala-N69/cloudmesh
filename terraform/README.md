@@ -29,6 +29,14 @@ The automated tests check JSON contents and both severity thresholds as well.
 
 ## Cloud SQL automated backup review
 
+Cloud SQL `backup_configuration.enabled` and `ip_configuration.ipv4_enabled`
+must be booleans when non-null. Strings such as `"true"`/`"false"`, numeric
+values, arrays, and objects fail with input error 2 and no partial report in
+single or batch scans. All supplied configuration blocks are checked for these
+types. Missing/null flags retain existing unknown-value behavior; valid public
+IPv4 and disabled-backup findings retain their HIGH/MEDIUM severities. This is
+not a complete validation of the provider's block structure or defaults.
+
 The scanner emits one MEDIUM finding per `google_sql_database_instance` when
 planned `settings[].backup_configuration[].enabled` is explicitly `false`.
 This is a recovery-coverage review warning, not proof that all backups are

@@ -35,7 +35,7 @@ class TestCloudSqlBackups(unittest.TestCase):
                 self.assertEqual(scan_plan(plan(settings)), [])
 
     def test_no_warning_for_other_values(self):
-        for value in [True, None, 0, "false"]:
+        for value in [True, None]:
             with self.subTest(value=value):
                 self.assertEqual(scan_plan(plan([
                     {"backup_configuration": [{"enabled": value}]}])), [])
