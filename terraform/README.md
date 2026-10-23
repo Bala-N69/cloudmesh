@@ -53,6 +53,13 @@ Reference: [Google provider Cloud SQL backup configuration](https://registry.ter
 
 ## Output contract
 
+Cloud Storage `uniform_bucket_level_access` must be a boolean when non-null.
+Strings such as `"false"`, numbers, arrays, and objects produce input error 2
+with no partial report in single or batch scans. Boolean `false` still produces
+the MEDIUM uniform-access warning; true, missing, and null retain existing
+behavior. This validates the supplied flag, not effective bucket permissions
+or organization policy. Deletion/replacement warnings remain independent.
+
 Resource `change.after` must be an object or null when supplied. Booleans,
 numbers, strings, and arrays (including empty values) cause input error 2
 without a partial report in single or batch scans. This validation applies
