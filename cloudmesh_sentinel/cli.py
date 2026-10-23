@@ -163,6 +163,7 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                 )
 
         if resource_type == "google_storage_bucket":
+            validate_boolean_fields(after, ["uniform_bucket_level_access"])
             if after.get("uniform_bucket_level_access") is False:
                 findings.append(
                     (
