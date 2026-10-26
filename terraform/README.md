@@ -86,6 +86,13 @@ Terraform action vocabulary or plan schema.
 
 ## Firewall coverage and limits
 
+Firewall `allow` must be a list of objects when supplied. Malformed values
+(including `false`, empty strings, and empty objects) produce input error 2,
+not a clean scan. This shape validation also applies to disabled and egress
+rules. Missing, null, and empty lists remain supported; valid disabled and
+egress rules remain excluded from public-ingress findings. Single and batch
+scans emit no partial report on this error.
+
 Evaluated ingress allow rules require non-null `source_ranges` to be a list of
 valid IP-network strings. A scalar such as `"0.0.0.0/0"`, non-string entries,
 or invalid IP/prefix values cause input error 2 with no partial report, including

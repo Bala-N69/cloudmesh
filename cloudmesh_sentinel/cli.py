@@ -14,7 +14,11 @@ SEVERITY_RANK = {"MEDIUM": 1, "HIGH": 2}
 def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, str]]:
     """Inspect explicit public ingress ranges; unknown sources are not inferred."""
     validate_boolean_fields(after, ["disabled"])
-    rules = after.get("allow") or []
+    rules = after.get("allow")
+    if rules is None:
+        rules = []
+    if not isinstance(rules, list) or not all(isinstance(rule, dict) for rule in rules):
+        raise ValueError("Firewall allow must be a list of objects")
     if after.get("disabled") is True or after.get("direction") == "EGRESS" or not rules:
         return []
     public_ranges = set()
