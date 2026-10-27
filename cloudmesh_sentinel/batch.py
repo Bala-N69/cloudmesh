@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import sys
 
-from .cli import (SEVERITY_RANK, markdown_cell, markdown_report,
+from .cli import (SEVERITY_RANK, markdown_cell, markdown_report, sarif_report,
                   reject_duplicate_keys, reject_nonfinite_constant, parse_finite_float, scan_file)
 
 
@@ -49,7 +49,7 @@ def scan_batch(manifest):
 def main():
     parser = argparse.ArgumentParser(description="Scan an explicit batch of GCP plans and Kubernetes JSON.")
     parser.add_argument("manifest", type=Path, help="JSON manifest listing input paths and kinds")
-    parser.add_argument("--format", choices=("text", "json", "markdown"), default="text")
+    parser.add_argument("--format", choices=("text", "json", "markdown", "sarif"), default="text")
     parser.add_argument("--fail-on", choices=("none", "medium", "high"), default="none")
     args = parser.parse_args()
     try:
@@ -64,7 +64,12 @@ def main():
         for level, _, _ in all_findings)
     summary = {"files": len(reports), "total": len(all_findings), **{
         level: sum(severity == level for severity, _, _ in all_findings) for level in SEVERITY_RANK}}
-    if args.format == "json":
+    if args.format == "sarif":
+        # Batch sources are relative to the manifest, not the process directory.
+        sarif_inputs = [(str(args.manifest.parent / source), kind, findings)
+                        for source, kind, findings in reports]
+        print(json.dumps(sarif_report(sarif_inputs, args.fail_on), indent=2))
+    elif args.format == "json":
         print(json.dumps({"schema_version": 1, "report_type": "batch", "summary": summary,
             "fail_on": args.fail_on, "gate": "informational" if args.fail_on == "none" else ("fail" if blocked else "pass"),
             "files": [{"source": source, "kind": kind, "findings": [

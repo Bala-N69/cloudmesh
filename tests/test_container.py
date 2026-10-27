@@ -47,6 +47,18 @@ class TestContainer(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["findings"], [])
 
+    def test_sarif_export_preserves_gate(self):
+        for args in [("examples/demo-plan.json",),
+                     ("-m", "cloudmesh_sentinel.batch", "examples/batch-demo.json")]:
+            with self.subTest(args=args):
+                result = self.run_container(*args, "--format", "sarif", "--fail-on", "high",
+                                            entrypoint="python" if args[0] == "-m" else None)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["version"], "2.1.0")
+                self.assertEqual(report["runs"][0]["properties"]["gate"], "fail")
+                self.assertTrue(report["runs"][0]["results"])
+
     def test_risky_plan_fails_gate(self):
         result = self.run_container("examples/demo-plan.json", "--format", "json",
                                     "--fail-on", "high")

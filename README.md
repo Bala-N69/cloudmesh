@@ -66,6 +66,18 @@ python3 -m cloudmesh_sentinel.compare before.json after.json --format markdown -
 Gates count all current findings, including unchanged risks. See the
 [comparison guide](docs/comparison.md) for a runnable demo and matching limits.
 
+## Export for security tooling
+
+Single and mixed-batch scans support `--format sarif` for SARIF 2.1.0 reports,
+with input-file locations, resource identities, and severity gates:
+
+```bash
+python3 -m cloudmesh_sentinel.batch examples/batch-demo.json --format sarif > /tmp/cloudmesh.sarif
+```
+
+Export stays local and does not upload infrastructure data. See the
+[SARIF guide](docs/sarif.md) for portability, privacy, and integration limits.
+
 ## What it detects
 
 Input validation rejects numeric overflow such as `1e999`, as well as literal
@@ -116,7 +128,7 @@ The scanner can also be packaged as a non-root container with only its source
 and synthetic examples. See the [Docker guide](docs/docker.md) for build/run
 commands, read-only input mounts, and opt-in container tests. A Docker engine
 is required for local container checks; no cloud account is needed. GitHub
-Actions builds the image and runs its eight integration tests in a separate job,
+Actions builds the image and runs its integration tests in a separate job,
 including external read-only plan inputs and malformed-input handling.
 
 ## Run the tests

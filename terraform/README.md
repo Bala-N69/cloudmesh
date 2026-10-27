@@ -86,6 +86,10 @@ Terraform action vocabulary or plan schema.
 
 ## Firewall coverage and limits
 
+For security-tool exports of GCP results, use `--format sarif` on single scans
+or mixed batches. This preserves severity gates and references input-plan JSON
+files, not original HCL lines. See the [SARIF guide](../docs/sarif.md).
+
 Firewall `allow` must be a list of objects when supplied. Malformed values
 (including `false`, empty strings, and empty objects) produce input error 2,
 not a clean scan. This shape validation also applies to disabled and egress
