@@ -1,5 +1,10 @@
 # Kubernetes lab
 
+Kubernetes single and mixed-batch scans support `--format sarif` for security
+tooling. Reports retain workload/container identity and input JSON file locations
+without guessing YAML line numbers. Existing severity gates remain enforced.
+See the [SARIF export guide](../docs/sarif.md) for examples and limitations.
+
 Saved Kubernetes JSON scan reports can be compared for new, resolved, and
 unchanged findings using the [comparison command](../docs/comparison.md).
 Regular scanning and all existing security gates remain unchanged.

@@ -1,9 +1,11 @@
 import argparse
+import hashlib
 import json
 import math
 import sys
 from ipaddress import ip_network
 from pathlib import Path
+from urllib.parse import quote
 
 PUBLIC_MEMBERS = {"allUsers", "allAuthenticatedUsers"}
 ADMIN_PORTS = {"22", "3389"}
@@ -430,6 +432,37 @@ def scan_file(path: Path, input_kind: str):
     return scan_plan(plan)
 
 
+def sarif_report(reports, fail_on="none"):
+    """Export completed scans without embedding raw input or inventing line numbers."""
+    rules = {}
+    results = []
+    for source, kind, findings in reports:
+        source_path = Path(source)
+        uri = source_path.as_uri() if source_path.is_absolute() else quote(source_path.as_posix(), safe="/")
+        for severity, address, message in findings:
+            rule_id = "cloudmesh/" + kind + "/" + hashlib.sha256(message.encode("utf-8")).hexdigest()[:16]
+            rules[rule_id] = {"id": rule_id, "shortDescription": {"text": message}}
+            identity = json.dumps([kind, source, severity, address, message], ensure_ascii=True)
+            results.append({
+                "ruleId": rule_id,
+                "level": "error" if severity == "HIGH" else "warning",
+                "message": {"text": str(address) + ": " + message},
+                "locations": [{"physicalLocation": {"artifactLocation": {"uri": uri}}}],
+                "partialFingerprints": {"cloudmeshFinding/v1": hashlib.sha256(identity.encode("utf-8")).hexdigest()},
+                "properties": {"severity": severity, "resource": address, "inputKind": kind},
+            })
+    blocked = fail_on != "none" and any(
+        SEVERITY_RANK[result["properties"]["severity"]] >= SEVERITY_RANK[fail_on.upper()]
+        for result in results)
+    return {"$schema": "https://json.schemastore.org/sarif-2.1.0.json", "version": "2.1.0",
+        "runs": [{"tool": {"driver": {"name": "CloudMesh Sentinel",
+            "rules": [rules[key] for key in sorted(rules)]}},
+            "results": results,
+            "invocations": [{"executionSuccessful": True}],
+            "properties": {"filesScanned": len(reports), "failOn": fail_on,
+                "gate": "informational" if fail_on == "none" else ("fail" if blocked else "pass")}}]}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scan Terraform plan or Kubernetes workload JSON for infrastructure risks."
@@ -437,7 +470,7 @@ def main() -> int:
     parser.add_argument("plan", type=Path, help="Path to Terraform plan or Kubernetes workload JSON")
     parser.add_argument("--input-kind", choices=("terraform", "kubernetes"), default="terraform",
                         help="Input format (default: terraform); Kubernetes requires workload JSON")
-    parser.add_argument("--format", choices=("text", "json", "markdown"), default="text")
+    parser.add_argument("--format", choices=("text", "json", "markdown", "sarif"), default="text")
     parser.add_argument("--fail-on", choices=("none", "medium", "high"), default="none",
                         help="Exit 1 for findings at or above this severity (default: none)")
     args = parser.parse_args()
@@ -448,7 +481,9 @@ def main() -> int:
         print(f"CloudMesh Sentinel: unable to scan plan: {error}", file=sys.stderr)
         return 2
 
-    if args.format == "json":
+    if args.format == "sarif":
+        print(json.dumps(sarif_report([(str(args.plan), args.input_kind, findings)], args.fail_on), indent=2))
+    elif args.format == "json":
         print(json.dumps({
             "schema_version": 1,
             "summary": {"total": len(findings), **{
