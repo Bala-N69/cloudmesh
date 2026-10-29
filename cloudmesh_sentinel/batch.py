@@ -50,10 +50,17 @@ def main():
     parser = argparse.ArgumentParser(description="Scan an explicit batch of GCP plans and Kubernetes JSON.")
     parser.add_argument("manifest", type=Path, help="JSON manifest listing input paths and kinds")
     parser.add_argument("--format", choices=("text", "json", "markdown", "sarif"), default="text")
+    parser.add_argument("--source-root", type=Path, help="Emit SARIF paths relative to this directory")
     parser.add_argument("--fail-on", choices=("none", "medium", "high"), default="none")
     args = parser.parse_args()
+    if args.source_root is not None and args.format != "sarif":
+        parser.error("--source-root requires --format sarif")
     try:
         reports = scan_batch(args.manifest)
+        if args.format == "sarif":
+            sarif_inputs = [(str(args.manifest.parent / source), kind, findings)
+                            for source, kind, findings in reports]
+            report = sarif_report(sarif_inputs, args.fail_on, args.source_root)
     except (OSError, ValueError, TypeError, AttributeError, KeyError) as error:
         print(f"CloudMesh Sentinel: unable to scan batch: {error}", file=sys.stderr)
         return 2
@@ -65,10 +72,7 @@ def main():
     summary = {"files": len(reports), "total": len(all_findings), **{
         level: sum(severity == level for severity, _, _ in all_findings) for level in SEVERITY_RANK}}
     if args.format == "sarif":
-        # Batch sources are relative to the manifest, not the process directory.
-        sarif_inputs = [(str(args.manifest.parent / source), kind, findings)
-                        for source, kind, findings in reports]
-        print(json.dumps(sarif_report(sarif_inputs, args.fail_on), indent=2))
+        print(json.dumps(report, indent=2))
     elif args.format == "json":
         print(json.dumps({"schema_version": 1, "report_type": "batch", "summary": summary,
             "fail_on": args.fail_on, "gate": "informational" if args.fail_on == "none" else ("fail" if blocked else "pass"),

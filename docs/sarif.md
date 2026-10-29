@@ -16,6 +16,28 @@ python3 cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kub
 
 ## Report contract
 
+### Portable repository-relative paths
+
+Use `--source-root` with SARIF to remove the local checkout prefix from report
+locations and normalize fingerprint paths across machines:
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/demo-plan.json --format sarif --source-root .
+python3 -m cloudmesh_sentinel.batch examples/batch-demo.json --format sarif --source-root . --fail-on high
+```
+
+The root is resolved relative to the invocation directory and must exist as a
+directory. Input paths keep their usual meaning (batch entries remain relative
+to the manifest). Resolved inputs must be inside the root, including inputs with
+zero findings. Parent traversal or symlinks leading outside it fail with exit 2
+and no partial report; the exporter never falls back to an absolute path.
+This validates export locations, not a sandbox: scanning still reads inputs
+before report construction. Without the option, existing path behavior remains.
+The option is rejected for non-SARIF output. It does not redact resource names,
+messages, relative filenames, or scan-error diagnostics: review before sharing.
+
+### Fields
+
 - HIGH maps to SARIF `error`; MEDIUM maps to `warning`.
 - Findings retain resource address, input kind, severity, and input-file URI.
   Reserved filename characters are percent-encoded.
