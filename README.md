@@ -77,6 +77,8 @@ python3 -m cloudmesh_sentinel.batch examples/batch-demo.json --format sarif > /t
 
 Export stays local and does not upload infrastructure data. See the
 [SARIF guide](docs/sarif.md) for portability, privacy, and integration limits.
+Add `--source-root .` from the repository root to export relative paths without
+the local checkout prefix; inputs outside that root are rejected.
 
 ## What it detects
 
