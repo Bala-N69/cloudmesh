@@ -3,6 +3,7 @@ import hashlib
 import json
 import math
 import sys
+import unicodedata
 from ipaddress import ip_network
 from pathlib import Path
 from urllib.parse import quote
@@ -11,6 +12,13 @@ PUBLIC_MEMBERS = {"allUsers", "allAuthenticatedUsers"}
 ADMIN_PORTS = {"22", "3389"}
 PRIVILEGED_PROJECT_ROLES = {"roles/owner", "roles/editor"}
 SEVERITY_RANK = {"MEDIUM": 1, "HIGH": 2}
+
+
+def terminal_text(value):
+    """Render untrusted text without terminal controls or direction overrides."""
+    return "".join(character.encode("unicode_escape").decode("ascii")
+                   if unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"}
+                   else character for character in str(value))
 
 
 def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, str]]:
@@ -511,8 +519,8 @@ def main() -> int:
     else:
         print(f"CloudMesh Sentinel: {len(findings)} finding(s)\n")
         for severity, address, message in findings:
-            print(f"[{severity}] {address}")
-            print(f"  {message}\n")
+            print(f"[{severity}] {terminal_text(address)}")
+            print(f"  {terminal_text(message)}\n")
 
     return int(args.fail_on != "none" and any(
         SEVERITY_RANK[severity] >= SEVERITY_RANK[args.fail_on.upper()]

@@ -1,5 +1,9 @@
 # Kubernetes lab
 
+Single and batch terminal reports escape control characters in workload and
+container names so they cannot insert fake finding lines or terminal commands.
+Machine-readable reports preserve original values. See [report safety](../docs/reports.md#terminal-text-safety).
+
 Kubernetes single and mixed-batch scans support `--format sarif` for security
 tooling. Reports retain workload/container identity and input JSON file locations
 without guessing YAML line numbers. Existing severity gates remain enforced.

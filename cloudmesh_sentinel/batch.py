@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import sys
 
-from .cli import (SEVERITY_RANK, markdown_cell, markdown_report, sarif_report,
+from .cli import (SEVERITY_RANK, markdown_cell, markdown_report, sarif_report, terminal_text,
                   reject_duplicate_keys, reject_nonfinite_constant, parse_finite_float, scan_file)
 
 
@@ -97,7 +97,7 @@ def main():
         for source, kind, findings in reports:
             print(f"\nSource: {source!r} ({kind}) — {len(findings)} finding(s)")
             for level, address, message in findings:
-                print(f"[{level}] {address}\n  {message}")
+                print(f"[{level}] {terminal_text(address)}\n  {terminal_text(message)}")
     return int(blocked)
 
 

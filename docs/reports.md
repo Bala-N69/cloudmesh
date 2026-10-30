@@ -52,3 +52,14 @@ punctuation is represented as HTML numeric entities so input cannot create new
 table columns, headings, links, or raw HTML. These entities display as ordinary
 characters in rendered Markdown. Escaping is not secret redaction: inspect
 resource names before sharing a report. A report only covers implemented rules.
+
+## Terminal text safety
+
+Single and batch text reports display control characters in finding addresses
+and messages as visible escapes (for example `\n` and `\x1b`). Unicode direction
+controls and line separators are escaped too, preventing input-provided names
+from clearing the terminal or inserting fake finding lines. Ordinary Unicode
+names remain readable. This is display escaping, not secret redaction.
+JSON and SARIF retain the original field values for machine processing; gates
+and finding counts are unchanged. This protection applies to finding text, not
+all diagnostics emitted by external tools or the operating system.
