@@ -88,6 +88,8 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
 
     for resource in plan.get("resource_changes", []):
         address = resource.get("address", "unknown resource")
+        if not isinstance(address, str) or not address.strip():
+            raise ValueError("Resource address must be a nonempty string")
         resource_type = resource.get("type", "")
         change = resource.get("change", {})
         actions = change.get("actions", [])
