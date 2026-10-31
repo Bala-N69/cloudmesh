@@ -86,6 +86,13 @@ Terraform action vocabulary or plan schema.
 
 ## Firewall coverage and limits
 
+Terraform resource addresses, when supplied, must be nonempty strings (not
+whitespace-only). Invalid addresses fail single and batch scans with exit 2
+and no partial report in any format, even for resources without risk findings.
+This keeps resource identities usable by report consumers and comparisons.
+Missing addresses retain the legacy `unknown resource` fallback for synthetic
+fixtures; valid addresses are preserved without trimming or rewriting.
+
 For security-tool exports of GCP results, use `--format sarif` on single scans
 or mixed batches. This preserves severity gates and references input-plan JSON
 files, not original HCL lines. See the [SARIF guide](../docs/sarif.md).
