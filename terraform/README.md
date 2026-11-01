@@ -86,6 +86,12 @@ Terraform action vocabulary or plan schema.
 
 ## Firewall coverage and limits
 
+Cloud SQL `settings`, `backup_configuration`, and `ip_configuration` must be
+lists of objects when supplied. Malformed blocks, including false, empty strings,
+and empty objects, fail with exit 2 and no partial single or batch report in any
+format. Missing, null, and empty lists remain supported as unknown/absent values,
+not evidence of secure configuration. Existing backup and public-IP checks remain.
+
 Terraform resource addresses, when supplied, must be nonempty strings (not
 whitespace-only). Invalid addresses fail single and batch scans with exit 2
 and no partial report in any format, even for resources without risk findings.
