@@ -199,11 +199,14 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
 
         if resource_type == "google_sql_database_instance":
             settings = object_list(after.get("settings"), "Cloud SQL settings")
+            public_ipv4 = False
             for setting in settings:
                 for backup in object_list(setting.get("backup_configuration"), "Cloud SQL backup_configuration"):
                     validate_boolean_fields(backup, ["enabled"])
                 for configuration in object_list(setting.get("ip_configuration"), "Cloud SQL ip_configuration"):
                     validate_boolean_fields(configuration, ["ipv4_enabled"])
+                    if configuration.get("ipv4_enabled") is True:
+                        public_ipv4 = True
             if any(
                 backup.get("enabled") is False
                 for setting in settings
@@ -212,8 +215,7 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                 findings.append(
                     ("MEDIUM", address, "Cloud SQL automated backups are explicitly disabled; review recovery coverage.")
                 )
-            ip_configuration = settings[0].get("ip_configuration", []) if settings else []
-            if ip_configuration and ip_configuration[0].get("ipv4_enabled") is True:
+            if public_ipv4:
                 findings.append(
                     ("HIGH", address, "Cloud SQL instance permits a public IPv4 address.")
                 )
