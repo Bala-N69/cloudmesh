@@ -35,6 +35,23 @@ class TestSqlSettings(unittest.TestCase):
             "ip_configuration": [{"ipv4_enabled": True}]}]}))
         self.assertEqual([item[0] for item in findings], ["MEDIUM", "HIGH"])
 
+    def test_public_ipv4_not_hidden_by_block_order_or_counted_twice(self):
+        enabled = {"ipv4_enabled": True}
+        disabled = {"ipv4_enabled": False}
+        for settings in [
+            [{"ip_configuration": [disabled, enabled]}],
+            [{}, {"ip_configuration": [enabled]}],
+            [{"ip_configuration": [enabled, enabled]}, {"ip_configuration": [enabled]}],
+        ]:
+            with self.subTest(settings=settings):
+                self.assertEqual(scan_plan(plan({"settings": settings})), [
+                    ("HIGH", "sql.example", "Cloud SQL instance permits a public IPv4 address.")])
+
+    def test_enabled_block_does_not_skip_validation_of_later_blocks(self):
+        with self.assertRaisesRegex(ValueError, "ipv4_enabled must be a boolean"):
+            scan_plan(plan({"settings": [{"ip_configuration": [
+                {"ipv4_enabled": True}, {"ipv4_enabled": "false"}]}]}))
+
     def test_cli_and_batch_no_partial_report(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "bad.json"

@@ -29,6 +29,11 @@ The automated tests check JSON contents and both severity thresholds as well.
 
 ## Cloud SQL automated backup review
 
+The public IPv4 check examines every IP configuration in the supplied settings.
+If any configuration explicitly enables IPv4, Sentinel reports one HIGH finding
+per instance, regardless of block order or repeated enabled values. All blocks
+are still validated. This flags a planned setting, not proven network reachability.
+
 Cloud SQL `backup_configuration.enabled` and `ip_configuration.ipv4_enabled`
 must be booleans when non-null. Strings such as `"true"`/`"false"`, numeric
 values, arrays, and objects fail with input error 2 and no partial report in
