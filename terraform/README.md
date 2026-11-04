@@ -91,6 +91,13 @@ Terraform action vocabulary or plan schema.
 
 ## Firewall coverage and limits
 
+Compute Engine network interfaces and their IPv4/IPv6 access configuration
+blocks must be lists of objects when supplied. Malformed values fail with
+exit 2 and no partial report in single or batch scans. Every block is validated,
+even after a public-IP configuration is found. Missing/null/empty lists remain
+accepted as absent or unknown. Multiple public configurations still produce
+only one HIGH public-IP finding per instance; this does not prove reachability.
+
 Cloud SQL `settings`, `backup_configuration`, and `ip_configuration` must be
 lists of objects when supplied. Malformed blocks, including false, empty strings,
 and empty objects, fail with exit 2 and no partial single or batch report in any

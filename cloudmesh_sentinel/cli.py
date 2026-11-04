@@ -145,11 +145,12 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
             findings.extend(public_firewall_findings(after, address))
 
         if resource_type == "google_compute_instance":
-            has_public_ip = any(
-                interface.get("access_config")
-                or interface.get("ipv6_access_config")
-                for interface in after.get("network_interface") or []
-            )
+            has_public_ip = False
+            for interface in object_list(after.get("network_interface"), "Compute network_interface"):
+                for field in ("access_config", "ipv6_access_config"):
+                    configurations = object_list(interface.get(field), "Compute " + field)
+                    if configurations:
+                        has_public_ip = True
             if has_public_ip:
                 findings.append(
                     ("HIGH", address, "Compute instance has a public IP address.")
