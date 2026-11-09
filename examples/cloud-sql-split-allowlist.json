@@ -1,0 +1,16 @@
+{
+  "resource_changes": [{
+    "address": "google_sql_database_instance.demo",
+    "type": "google_sql_database_instance",
+    "change": {
+      "actions": ["create"],
+      "after": {"settings": [{"ip_configuration": [{
+        "ipv4_enabled": true,
+        "authorized_networks": [
+          {"name": "first-half", "value": "0.0.0.0/1"},
+          {"name": "second-half", "value": "128.0.0.0/1"}
+        ]
+      }]}]}
+    }
+  }]
+}

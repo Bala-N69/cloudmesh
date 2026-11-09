@@ -4,7 +4,7 @@ import json
 import math
 import sys
 import unicodedata
-from ipaddress import ip_network
+from ipaddress import collapse_addresses, ip_network
 from pathlib import Path
 from urllib.parse import quote
 
@@ -78,6 +78,23 @@ def object_list(value, field):
     if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
         raise ValueError(f"{field} must be a list of objects")
     return value
+
+
+def sql_allows_all_ipv4(configuration):
+    networks = []
+    for entry in object_list(configuration.get("authorized_networks"), "Cloud SQL authorized_networks"):
+        value = entry.get("value")
+        if value is None:
+            continue
+        try:
+            if not isinstance(value, str):
+                raise ValueError
+            network = ip_network(value, strict=False)
+        except ValueError as error:
+            raise ValueError("Cloud SQL authorized_networks.value must be an IP address or CIDR") from error
+        if network.version == 4:
+            networks.append(network)
+    return any(network.prefixlen == 0 for network in collapse_addresses(networks))
 
 
 def iam_members(after):
@@ -201,11 +218,14 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
         if resource_type == "google_sql_database_instance":
             settings = object_list(after.get("settings"), "Cloud SQL settings")
             public_ipv4 = False
+            unrestricted_ipv4 = False
             for setting in settings:
                 for backup in object_list(setting.get("backup_configuration"), "Cloud SQL backup_configuration"):
                     validate_boolean_fields(backup, ["enabled"])
                 for configuration in object_list(setting.get("ip_configuration"), "Cloud SQL ip_configuration"):
                     validate_boolean_fields(configuration, ["ipv4_enabled"])
+                    if sql_allows_all_ipv4(configuration):
+                        unrestricted_ipv4 = True
                     if configuration.get("ipv4_enabled") is True:
                         public_ipv4 = True
             if any(
@@ -220,6 +240,8 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                 findings.append(
                     ("HIGH", address, "Cloud SQL instance permits a public IPv4 address.")
                 )
+            if unrestricted_ipv4:
+                findings.append(("HIGH", address, "Cloud SQL authorized networks cover every IPv4 address."))
 
         if resource_type == "google_container_cluster":
             master_networks = after.get("master_authorized_networks_config") or []
