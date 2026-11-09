@@ -29,6 +29,23 @@ The automated tests check JSON contents and both severity thresholds as well.
 
 ## Cloud SQL automated backup review
 
+To try the authorized-network check locally:
+
+```bash
+python3 cloudmesh_sentinel/cli.py examples/cloud-sql-split-allowlist.json --fail-on high
+```
+
+Expect exit 1 and two HIGH findings: the public IPv4 setting and the allowlist
+that covers all IPv4 addresses. Remove either half of the allowlist in a copy:
+only the public IPv4 finding remains. Sentinel combines known IPv4 ranges
+within each IP configuration, never across configurations or instances.
+Duplicate and overlapping ranges count only once. One allowlist finding is
+reported per instance. It describes configured scope, not live access:
+expiration times, routing, authentication, and effective reachability are
+not evaluated. A disabled public IP does not erase the configured allowlist.
+Missing/null values are unknown; malformed supplied ranges produce an input
+error rather than a clean report. IPv6 ranges do not contribute to IPv4 coverage.
+
 The public IPv4 check examines every IP configuration in the supplied settings.
 If any configuration explicitly enables IPv4, Sentinel reports one HIGH finding
 per instance, regardless of block order or repeated enabled values. All blocks
