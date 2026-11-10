@@ -12,6 +12,22 @@ The scanner runs locally with Python 3.10+ and the standard library—no cloud
 account, credentials, Terraform installation, or running cluster is needed to
 try the examples. CI tests the project with Python 3.12.
 
+## At a glance
+
+```text
+  GCP Terraform plan ──┐
+                       ├──► CloudMesh Sentinel ──► Findings (HIGH / MEDIUM)
+  Kubernetes JSON ─────┘           │                         │
+                                  │                         ├──► Terminal / Markdown / JSON / SARIF
+                                  │                         └──► Optional CI severity gate
+                                  └──► Before-and-after report comparison
+```
+
+Everything shown here is a local review of supplied JSON files. The scanner
+does not deploy infrastructure or connect to a cloud account. Findings point
+to settings worth investigating; they do not prove a resource is reachable or
+that a workload is secure.
+
 ## Quick start
 
 ```bash
