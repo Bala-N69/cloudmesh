@@ -244,12 +244,24 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                 findings.append(("HIGH", address, "Cloud SQL authorized networks cover every IPv4 address."))
 
         if resource_type == "google_container_cluster":
-            master_networks = after.get("master_authorized_networks_config") or []
-            allows_anywhere = any(
-                cidr.get("cidr_block") == "0.0.0.0/0"
-                for configuration in master_networks
-                for cidr in configuration.get("cidr_blocks", [])
-            )
+            allows_anywhere = False
+            for configuration in object_list(after.get("master_authorized_networks_config"),
+                                             "GKE master_authorized_networks_config"):
+                networks = []
+                for cidr in object_list(configuration.get("cidr_blocks"), "GKE cidr_blocks"):
+                    value = cidr.get("cidr_block")
+                    if value is None:
+                        continue
+                    try:
+                        if not isinstance(value, str):
+                            raise ValueError
+                        network = ip_network(value, strict=False)
+                    except ValueError as error:
+                        raise ValueError("GKE cidr_block must be an IP address or CIDR") from error
+                    if network.version == 4:
+                        networks.append(network)
+                if any(network.prefixlen == 0 for network in collapse_addresses(networks)):
+                    allows_anywhere = True
             if allows_anywhere:
                 findings.append(
                     (

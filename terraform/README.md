@@ -1,5 +1,12 @@
 # GCP Terraform plan lab
 
+GKE authorized control-plane networks are checked per configuration. An
+explicit `0.0.0.0/0`, or multiple IPv4 CIDRs that together cover the same
+range, produces one HIGH finding per cluster. Separate configurations are not
+combined. Invalid supplied CIDRs fail the scan; missing/null values remain
+unknown. This checks the planned allowlist, not effective reachability or
+other cluster access controls.
+
 This lab scans synthetic Terraform plan JSON locally. Python's standard
 library is sufficient: no GCP project, Terraform installation, credentials,
 deployment, or billing account is required for these examples.
