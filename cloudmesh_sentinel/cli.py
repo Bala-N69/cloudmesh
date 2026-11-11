@@ -59,13 +59,14 @@ def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, 
             if not ports:
                 allows_admin = True
             for value in ports:
-                bounds = str(value).split("-")
-                try:
-                    start = int(bounds[0])
-                    end = int(bounds[-1])
-                except ValueError:
-                    continue
-                if len(bounds) <= 2 and any(start <= int(port) <= end for port in ADMIN_PORTS):
+                bounds = value.split("-")
+                if (len(bounds) not in {1, 2} or not all(part.isascii() and part.isdecimal() for part in bounds)
+                        or any(len(part) > 5 for part in bounds)):
+                    raise ValueError("Firewall allow.ports contains an invalid TCP port or range")
+                start, end = int(bounds[0]), int(bounds[-1])
+                if not (1 <= start <= end <= 65535):
+                    raise ValueError("Firewall allow.ports contains an invalid TCP port or range")
+                if any(start <= int(port) <= end for port in ADMIN_PORTS):
                     allows_admin = True
     severity = "HIGH" if allows_admin else "MEDIUM"
     return [(severity, address, f"Firewall allows traffic from {source}.")
