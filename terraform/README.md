@@ -1,5 +1,12 @@
 # GCP Terraform plan lab
 
+GKE authorized control-plane networks are checked per configuration. An
+explicit `0.0.0.0/0`, or multiple IPv4 CIDRs that together cover the same
+range, produces one HIGH finding per cluster. Separate configurations are not
+combined. Invalid supplied CIDRs fail the scan; missing/null values remain
+unknown. This checks the planned allowlist, not effective reachability or
+other cluster access controls.
+
 This lab scans synthetic Terraform plan JSON locally. Python's standard
 library is sufficient: no GCP project, Terraform installation, credentials,
 deployment, or billing account is required for these examples.
@@ -150,9 +157,11 @@ deny-only rules are still skipped. This does not infer effective reachability.
 For evaluated ingress allow rules, non-null `ports` must be a list of strings,
 such as `["22", "443"]`, not a scalar `"22"`. Invalid list shapes or non-string
 members cause input error 2 and no partial report, preventing character-by-character
-interpretation from understating admin-port risks. Missing/null/empty port lists
-retain unrestricted-TCP behavior. Disabled and egress rules remain skipped;
-this shape check does not validate every port string or replace provider validation.
+interpretation from understating admin-port risks. For evaluated TCP (`tcp` or
+`6`) rules, strings must be decimal ports or inclusive `start-end` ranges within
+1–65535; malformed or descending ranges also fail rather than being silently
+ignored. Missing/null/empty port lists retain unrestricted-TCP behavior.
+Disabled and egress rules remain skipped; this is not full provider validation.
 
 The scanner detects explicit all-source ranges (`0.0.0.0/0` and `::/0`)
 on enabled ingress allow rules. TCP ports 22 and 3389, inclusive ranges

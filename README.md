@@ -116,7 +116,7 @@ numeric validation.
 - Public principals and broad service-account roles inside full GCP IAM policies
 - Creation or replacement of GCP service-account keys
 - Kubernetes container privilege settings, host access, and hardening gaps
-- GKE control planes that allow access from any IPv4 address
+- GKE control-plane allowlists that cover every IPv4 address, including combined CIDRs
 - Resources scheduled for deletion
 - Resources scheduled for replacement
 
