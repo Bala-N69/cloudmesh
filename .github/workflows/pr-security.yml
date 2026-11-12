@@ -1,0 +1,59 @@
+name: Pull request security scan
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-security-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Scan dependencies, secrets, and infrastructure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out proposed changes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Scan dependencies and secrets
+        id: code
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          format: json
+          output: ${{ runner.temp }}/pr-code.json
+          exit-code: '0'
+          cache: 'false'
+          timeout: 10m
+
+      - name: Scan infrastructure
+        id: infrastructure
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: misconfig
+          skip-files: examples/kubernetes-risky.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          format: json
+          output: ${{ runner.temp }}/pr-infrastructure.json
+          exit-code: '0'
+          cache: 'false'
+          timeout: 10m
+
+      - name: Check scan results
+        if: ${{ !cancelled() }}
+        env:
+          CODE_OUTCOME: ${{ steps.code.outcome }}
+          INFRASTRUCTURE_OUTCOME: ${{ steps.infrastructure.outcome }}
+        run: python3 scripts/check_trivy_pr.py --code "$RUNNER_TEMP/pr-code.json" --infrastructure "$RUNNER_TEMP/pr-infrastructure.json" --code-outcome "$CODE_OUTCOME" --infrastructure-outcome "$INFRASTRUCTURE_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
