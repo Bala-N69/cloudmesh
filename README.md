@@ -30,6 +30,18 @@ that a workload is secure.
 
 ## Quick start
 
+For a one-command walkthrough of the bundled GCP and Kubernetes findings:
+
+```bash
+bash scripts/run-demo.sh
+```
+
+This writes a Markdown report to a newly created temporary file and prints its
+path. The intentional HIGH findings make the simulated CI gate fail; the demo
+command itself succeeds only when that expected result occurs. No cloud account,
+cluster, credentials, or paid service is used. The report stays on your machine;
+review its contents before sharing it.
+
 ```bash
 git clone https://github.com/Bala-N69/cloudmesh.git
 cd cloudmesh
