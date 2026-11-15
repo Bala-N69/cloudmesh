@@ -32,6 +32,7 @@ def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, 
     if after.get("disabled") is True or after.get("direction") == "EGRESS" or not rules:
         return []
     public_ranges = set()
+    source_networks = {4: [], 6: []}
     sources = after.get("source_ranges")
     if sources is not None and (not isinstance(sources, list)
                                 or not all(isinstance(source, str) for source in sources)):
@@ -41,8 +42,12 @@ def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, 
             network = ip_network(source, strict=False)
         except ValueError as error:
             raise ValueError("Firewall source_ranges contains an invalid IP network") from error
+        source_networks[network.version].append(network)
         if network.prefixlen == 0:
             public_ranges.add(str(network))
+    for version, networks in source_networks.items():
+        if any(network.prefixlen == 0 for network in collapse_addresses(networks)):
+            public_ranges.add("0.0.0.0/0" if version == 4 else "::/0")
 
     allows_admin = False
     for rule in rules:
