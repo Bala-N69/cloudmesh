@@ -56,7 +56,10 @@ def public_firewall_findings(after: dict, address: str) -> list[tuple[str, str, 
                                   or not all(isinstance(port, str) for port in ports)):
             raise ValueError("Firewall allow.ports must be a list of strings")
         # Older synthetic examples omit protocol; preserve their TCP behavior.
-        protocol = str(rule.get("protocol", "tcp")).lower()
+        protocol = rule.get("protocol", "tcp")
+        if not isinstance(protocol, str) or not protocol.strip():
+            raise ValueError("Firewall allow.protocol must be a nonempty string")
+        protocol = protocol.lower()
         if protocol == "all":
             allows_admin = True
         elif protocol in {"tcp", "6"}:

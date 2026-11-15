@@ -163,6 +163,11 @@ interpretation from understating admin-port risks. For evaluated TCP (`tcp` or
 ignored. Missing/null/empty port lists retain unrestricted-TCP behavior.
 Disabled and egress rules remain skipped; this is not full provider validation.
 
+Evaluated ingress `allow.protocol` values must be nonempty strings. Malformed
+values such as booleans, numbers, null, arrays, or objects produce input error
+2 rather than being coerced into protocol names. An omitted protocol retains
+the synthetic examples' TCP default; valid non-TCP strings remain supported.
+
 The scanner detects all-source ranges (`0.0.0.0/0` and `::/0`), including
 multiple CIDRs that together cover an entire address family, on enabled
 ingress allow rules. IPv4 and IPv6 ranges are evaluated separately; overlapping
