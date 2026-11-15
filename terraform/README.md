@@ -163,8 +163,15 @@ interpretation from understating admin-port risks. For evaluated TCP (`tcp` or
 ignored. Missing/null/empty port lists retain unrestricted-TCP behavior.
 Disabled and egress rules remain skipped; this is not full provider validation.
 
-The scanner detects explicit all-source ranges (`0.0.0.0/0` and `::/0`)
-on enabled ingress allow rules. TCP ports 22 and 3389, inclusive ranges
+Evaluated ingress `allow.protocol` values must be nonempty strings. Malformed
+values such as booleans, numbers, null, arrays, or objects produce input error
+2 rather than being coerced into protocol names. An omitted protocol retains
+the synthetic examples' TCP default; valid non-TCP strings remain supported.
+
+The scanner detects all-source ranges (`0.0.0.0/0` and `::/0`), including
+multiple CIDRs that together cover an entire address family, on enabled
+ingress allow rules. IPv4 and IPv6 ranges are evaluated separately; overlapping
+ranges do not duplicate findings. TCP ports 22 and 3389, inclusive ranges
 containing them, unrestricted TCP, and the `all` protocol are HIGH.
 Other public ingress allow rules are MEDIUM. Numeric TCP protocol `6` is
 supported. Disabled, egress, and deny-only rules do not generate this finding;
