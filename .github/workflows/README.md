@@ -4,6 +4,19 @@ The workflow runs scanner tests, container integration tests, Kubernetes manifes
 validation, and Python security analysis. It runs on main-branch pushes, pull
 requests targeting main, manual dispatch, and the daily schedule.
 
+## Pull request security scan
+
+The separate **Pull request security scan** workflow checks proposed changes to
+`main` for dependency vulnerabilities, secrets, and infrastructure
+misconfigurations. It fails on HIGH or CRITICAL findings and on incomplete scans.
+The job summary contains severity counts only. Raw Trivy results stay on the
+runner and are not uploaded as artifacts.
+
+The intentionally unsafe `examples/kubernetes-risky.json` teaching fixture is
+excluded from the infrastructure scan. It remains in the dependency and secret
+scan. This check scans repository files; it does not run a deployed application
+or inspect a live cloud account.
+
 ## Overlapping runs
 
 Concurrency is grouped by workflow, event type, and Git ref:

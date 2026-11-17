@@ -266,6 +266,10 @@ the risky demo plan reports its expected high-risk findings, confirms the safe
 plan returns zero findings, validates the rendered Kubernetes security defaults,
 and performs CodeQL analysis on the Python code before changes are merged.
 
+Dependabot reviews GitHub Actions updates weekly and opens up to three grouped
+pull requests for review. This keeps the CI toolchain current without directly
+changing `main`.
+
 ## Project structure
 
 ```text
