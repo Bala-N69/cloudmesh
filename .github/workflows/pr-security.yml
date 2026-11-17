@@ -1,0 +1,64 @@
+name: Pull request security scan
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-security-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Scan dependencies, secrets, and infrastructure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out proposed changes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify the reviewed hostPort teaching fixture
+        run: echo '1d3864070de82f24273c234c5c45a145bc1a10f6e9b34c9d435846c3c544781b  examples/kubernetes-hostport-risky.json' | sha256sum --check --status
+
+      - name: Scan dependencies and secrets
+        id: code
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          format: json
+          output: ${{ runner.temp }}/pr-code.json
+          exit-code: '0'
+          cache: 'false'
+          timeout: 10m
+
+      - name: Scan infrastructure
+        id: infrastructure
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: misconfig
+          # Only these intentional teaching fixtures bypass misconfiguration scanning.
+          # The checksum above requires renewed review if hostPort content changes.
+          skip-files: examples/kubernetes-risky.json,examples/kubernetes-hostport-risky.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          format: json
+          output: ${{ runner.temp }}/pr-infrastructure.json
+          exit-code: '0'
+          cache: 'false'
+          timeout: 10m
+
+      - name: Check scan results
+        if: ${{ !cancelled() }}
+        env:
+          CODE_OUTCOME: ${{ steps.code.outcome }}
+          INFRASTRUCTURE_OUTCOME: ${{ steps.infrastructure.outcome }}
+        run: python3 scripts/check_trivy_pr.py --code "$RUNNER_TEMP/pr-code.json" --infrastructure "$RUNNER_TEMP/pr-infrastructure.json" --code-outcome "$CODE_OUTCOME" --infrastructure-outcome "$INFRASTRUCTURE_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
