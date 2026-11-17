@@ -22,6 +22,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Verify the reviewed hostPort teaching fixture
+        run: echo '1d3864070de82f24273c234c5c45a145bc1a10f6e9b34c9d435846c3c544781b  examples/kubernetes-hostport-risky.json' | sha256sum --check --status
+
       - name: Scan dependencies and secrets
         id: code
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -43,7 +46,9 @@ jobs:
           scan-type: fs
           scan-ref: .
           scanners: misconfig
-          skip-files: examples/kubernetes-risky.json
+          # Only these intentional teaching fixtures bypass misconfiguration scanning.
+          # The checksum above requires renewed review if hostPort content changes.
+          skip-files: examples/kubernetes-risky.json,examples/kubernetes-hostport-risky.json
           severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
           format: json
           output: ${{ runner.temp }}/pr-infrastructure.json

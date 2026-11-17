@@ -386,6 +386,20 @@ def scan_kubernetes(document):
                 if not isinstance(name, str) or not name:
                     raise ValueError("Container requires a name")
                 target = f"{address}/{group}/{name}"
+                ports = container.get("ports")
+                if ports is not None and (not isinstance(ports, list)
+                                          or not all(isinstance(port, dict) for port in ports)):
+                    raise ValueError("Container ports must be a list of objects")
+                host_port_enabled = False
+                for port in ports or []:
+                    host_port = port.get("hostPort")
+                    if host_port is not None:
+                        if type(host_port) is not int or not 0 <= host_port <= 65535:
+                            raise ValueError("Container hostPort must be an integer from 0 to 65535")
+                        if host_port > 0:
+                            host_port_enabled = True
+                if host_port_enabled:
+                    add("HIGH", target, "Container binds a hostPort; review node-level exposure.")
                 security = security_context(container)
                 validate_seccomp_profile(security)
                 validate_boolean_fields(security, ["privileged", "allowPrivilegeEscalation",

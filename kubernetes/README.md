@@ -212,11 +212,22 @@ Sentinel can inspect workload JSON offline, without kubectl or a cluster:
 ```bash
 python3 cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kubernetes --fail-on medium
 python3 cloudmesh_sentinel/cli.py examples/kubernetes-risky.json --input-kind kubernetes --format markdown --fail-on high
+python3 cloudmesh_sentinel/cli.py examples/kubernetes-hostport-risky.json --input-kind kubernetes --fail-on high
 ```
 
 The safe fixture returns zero findings. The risky fixture returns HIGH and
 MEDIUM findings and exits 1. These are scanner inputs, not complete deployment
 templates; use the existing Kustomize files to deploy the lab.
+
+The hostPort fixture isolates a HIGH finding for a container binding a node
+port. This is a configuration review signal, not proof the port is reachable:
+host IP selection, firewall rules, admission changes, and runtime networking
+are not resolved. Sentinel checks regular, init, and ephemeral containers and
+reports at most one hostPort finding per container even if several ports bind.
+The `ports` field must be a list of objects when supplied; explicit `hostPort`
+must be an integer from 0 through 65535 (not a boolean). Omitted/null/zero
+hostPort does not produce this finding. Malformed supplied values cause input
+error 2 with no partial report in single or batch scans.
 
 Supported inputs are a single Pod, Deployment, StatefulSet, DaemonSet,
 ReplicaSet, Job, or CronJob, or a Kubernetes `List` of those resources. Supply
@@ -237,7 +248,7 @@ values, arrays, and objects produce input error 2. Numeric `0` remains a HIGH
 root-user finding. A valid container UID overrides the pod UID; all explicit
 values are type-checked even when overridden. This does not inspect image users.
 
-HIGH findings cover host network/PID/IPC access, hostPath volumes, privileged
+HIGH findings cover host network/PID/IPC access, hostPath volumes, hostPort bindings, privileged
 containers, privilege escalation not explicitly disabled, missing/false
 runAsNonRoot, and explicit root UID 0. MEDIUM findings cover token mounting not
 explicitly disabled in the pod, writable container roots, missing ALL capability

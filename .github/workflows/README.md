@@ -47,3 +47,14 @@ instead of assuming the same infrastructure issue. Repeated acquisition failures
 should be investigated with GitHub support using the run URL and annotations.
 
 No automatic reruns or additional write permissions are configured.
+
+# Pull-request security fixture exception
+
+The PR Trivy workflow excludes two intentionally unsafe Kubernetes JSON
+teaching fixtures from **misconfiguration** scanning only:
+`examples/kubernetes-risky.json` and `examples/kubernetes-hostport-risky.json`.
+Secret and dependency scanning still includes both. The hostPort fixture has
+an exact SHA-256 check before scanning; if it changes, the exception must be
+reviewed and its expected hash updated deliberately. All other files still
+pass through the HIGH/CRITICAL security gate. This exception does not apply to
+real workload manifests.
