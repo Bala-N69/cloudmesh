@@ -1,0 +1,19 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {"name": "hostport-demo", "namespace": "cloudmesh-dev"},
+  "spec": {
+    "automountServiceAccountToken": false,
+    "securityContext": {"runAsNonRoot": true, "runAsUser": 101, "seccompProfile": {"type": "RuntimeDefault"}},
+    "containers": [{
+      "name": "web",
+      "image": "example.invalid/demo:lab",
+      "ports": [{"containerPort": 8080, "hostPort": 8080}],
+      "securityContext": {
+        "allowPrivilegeEscalation": false,
+        "readOnlyRootFilesystem": true,
+        "capabilities": {"drop": ["ALL"]}
+      }
+    }]
+  }
+}

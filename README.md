@@ -128,6 +128,7 @@ numeric validation.
 - Public principals and broad service-account roles inside full GCP IAM policies
 - Creation or replacement of GCP service-account keys
 - Kubernetes container privilege settings, host access, and hardening gaps
+- Kubernetes containers binding host ports, including init and ephemeral containers
 - GKE control-plane allowlists that cover every IPv4 address, including combined CIDRs
 - Resources scheduled for deletion
 - Resources scheduled for replacement
