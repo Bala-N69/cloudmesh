@@ -129,6 +129,7 @@ numeric validation.
 - Creation or replacement of GCP service-account keys
 - Kubernetes container privilege settings, host access, and hardening gaps
 - Kubernetes containers binding host ports, including init and ephemeral containers
+- Kubernetes Services requesting LoadBalancers, node ports, or external IP routes
 - GKE control-plane allowlists that cover every IPv4 address, including combined CIDRs
 - Resources scheduled for deletion
 - Resources scheduled for replacement
@@ -226,7 +227,7 @@ raw plan is omitted. See [reporting examples](docs/reports.md).
 
 ## Kubernetes lab
 
-Sentinel now checks individual Kubernetes workloads from JSON:
+Sentinel checks individual Kubernetes workloads and Services from JSON:
 
 ```bash
 python3 cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kubernetes --fail-on medium
@@ -236,7 +237,7 @@ python3 cloudmesh_sentinel/cli.py examples/kubernetes-risky.json --input-kind ku
 It checks regular, init, and ephemeral containers separately, including pod-level
 security settings inherited by each container. All three report formats and
 severity gates are supported. See [Kubernetes JSON scanning](kubernetes/README.md#kubernetes-json-scanning)
-for supported workloads, rules, and limits. Local seccomp profiles must specify a valid relative `localhostProfile` path;
+for supported resources, rules, and limits. Local seccomp profiles must specify a valid relative `localhostProfile` path;
 malformed profiles fail with exit 2 instead of producing a clean report.
 The offline scanner cannot verify node-local profile files. The existing Kustomize lab validation
 continues to check its specific baseline; the JSON scanner is a separate mode.

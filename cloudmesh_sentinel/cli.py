@@ -4,7 +4,7 @@ import json
 import math
 import sys
 import unicodedata
-from ipaddress import collapse_addresses, ip_network
+from ipaddress import collapse_addresses, ip_address, ip_network
 from pathlib import Path
 from urllib.parse import quote
 
@@ -325,9 +325,9 @@ def validate_user_id(context):
 
 
 def scan_kubernetes(document):
-    """Inspect Linux workload JSON without contacting a cluster."""
+    """Inspect Linux workloads and Services without contacting a cluster."""
     findings = []
-    supported = {"Pod", "Deployment", "StatefulSet", "DaemonSet", "Job", "CronJob", "ReplicaSet"}
+    supported = {"Pod", "Deployment", "StatefulSet", "DaemonSet", "Job", "CronJob", "ReplicaSet", "Service"}
 
     def inspect(resource):
         if not isinstance(resource, dict):
@@ -341,13 +341,45 @@ def scan_kubernetes(document):
                 inspect(item)
             return
         if kind not in supported:
-            raise ValueError("Unsupported Kubernetes kind; supply supported workloads only")
+            raise ValueError("Unsupported Kubernetes kind; supply supported workloads or Services only")
         metadata = resource.get("metadata") or {}
+        if not isinstance(metadata, dict):
+            raise ValueError("Kubernetes metadata must be an object")
         name = metadata.get("name")
         if not isinstance(name, str) or not name:
             raise ValueError("Kubernetes resource requires metadata.name")
         address = f"{kind}/{metadata.get('namespace', 'default')}/{name}"
         spec = resource.get("spec")
+        if kind == "Service":
+            if not isinstance(spec, dict):
+                raise ValueError("Service spec must be an object")
+            service_type = spec.get("type", "ClusterIP")
+            if not isinstance(service_type, str) or service_type not in {"ClusterIP", "NodePort", "LoadBalancer", "ExternalName"}:
+                raise ValueError("Service type is invalid")
+            external_ips = spec.get("externalIPs")
+            if external_ips is not None:
+                if not isinstance(external_ips, list) or not all(isinstance(value, str) for value in external_ips):
+                    raise ValueError("Service externalIPs must be a list of IP addresses")
+                for value in external_ips:
+                    try:
+                        ip_address(value)
+                    except ValueError as error:
+                        raise ValueError("Service externalIPs contains an invalid IP address") from error
+            ports = spec.get("ports")
+            if ports is not None and (not isinstance(ports, list)
+                                      or not all(isinstance(port, dict) for port in ports)):
+                raise ValueError("Service ports must be a list of objects")
+            for port in ports or []:
+                node_port = port.get("nodePort")
+                if node_port is not None and (type(node_port) is not int or not 0 <= node_port <= 65535):
+                    raise ValueError("Service nodePort must be an integer from 0 to 65535")
+            if service_type == "LoadBalancer":
+                findings.append(("HIGH", address, "Service requests a LoadBalancer; review external reachability."))
+            if service_type == "NodePort" or any(port.get("nodePort", 0) for port in ports or []):
+                findings.append(("HIGH", address, "Service requests a node port; review node-level exposure."))
+            if external_ips:
+                findings.append(("HIGH", address, "Service specifies externalIPs; review external routing."))
+            return
         if kind == "CronJob":
             spec = spec["jobTemplate"]["spec"]["template"]["spec"]
         elif kind != "Pod":

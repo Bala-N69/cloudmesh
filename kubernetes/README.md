@@ -207,7 +207,7 @@ To review several workloads alongside GCP plans, use the [batch scanner](../docs
 Each Kubernetes entry explicitly declares `"kind": "kubernetes"`; reports retain
 the source file and container address, with one severity gate across the batch.
 
-Sentinel can inspect workload JSON offline, without kubectl or a cluster:
+Sentinel can inspect workload and Service JSON offline, without kubectl or a cluster:
 
 ```bash
 python3 cloudmesh_sentinel/cli.py examples/kubernetes-safe.json --input-kind kubernetes --fail-on medium
@@ -230,11 +230,24 @@ hostPort does not produce this finding. Malformed supplied values cause input
 error 2 with no partial report in single or batch scans.
 
 Supported inputs are a single Pod, Deployment, StatefulSet, DaemonSet,
-ReplicaSet, Job, or CronJob, or a Kubernetes `List` of those resources. Supply
+ReplicaSet, Job, CronJob, or Service, or a Kubernetes `List` of these resources. Supply
 JSON explicitly with `--input-kind kubernetes`; YAML parsing is not included.
 Unsupported kinds, empty Lists, Windows workloads, and missing container lists
 produce an input error (exit 2), preventing an unsupported file from appearing
 to pass. This is not a complete Kubernetes schema validator.
+
+For Services, the scanner separately flags `LoadBalancer`, `NodePort` (or an
+explicit nonzero `nodePort`), and nonempty `externalIPs` as HIGH review signals.
+For example, a Service with `"type": "LoadBalancer"` and a nonzero `nodePort`
+produces two findings. Risky Services are generated inside tests rather than
+committed as deployable fixtures. `ClusterIP` and `ExternalName` do not trigger
+these checks. A finding means exposure is requested in configuration, not that
+the Service is reachable:
+cloud load-balancer settings, firewalls, routes, and admission changes are not
+resolved. Service `type` must be a supported string when supplied; `ports`
+must be a list of objects; `nodePort` must be an integer from 0 to 65535; and
+`externalIPs` must be a list of IP address strings. Malformed supplied fields
+fail the whole scan with exit 2 and no partial report.
 
 Container capability `add` and `drop` fields must be lists of strings when
 non-null. For example, `"drop": ["ALL"]` is accepted, but `"drop": "ALL"`

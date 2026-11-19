@@ -58,7 +58,7 @@ class TestWorkloads(unittest.TestCase):
 
     def test_list_and_unsupported_inputs(self):
         self.assertEqual(scan_kubernetes({"kind": "List", "items": [self.workload]}), [])
-        for invalid in [{}, {"kind": "Service"}, {"kind": "List", "items": []},
+        for invalid in [{}, {"kind": "ConfigMap"}, {"kind": "List", "items": []},
                         {"kind": "Pod", "metadata": {"name": "empty"}, "spec": {"containers": []}}]:
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 scan_kubernetes(invalid)
