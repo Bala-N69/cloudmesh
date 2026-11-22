@@ -249,6 +249,11 @@ must be a list of objects; `nodePort` must be an integer from 0 to 65535; and
 `externalIPs` must be a list of IP address strings. Malformed supplied fields
 fail the whole scan with exit 2 and no partial report.
 
+`securityContext.procMount: Unmasked` produces a HIGH finding for
+regular, init, and ephemeral containers because it relaxes the default `/proc`
+masking. Supplied `procMount` values other than `Default` or `Unmasked` fail
+input validation. The scanner does not verify cluster admission policy.
+
 Container capability `add` and `drop` fields must be lists of strings when
 non-null. For example, `"drop": ["ALL"]` is accepted, but `"drop": "ALL"`
 returns input error 2 without a report. Missing/null/empty drop lists still
