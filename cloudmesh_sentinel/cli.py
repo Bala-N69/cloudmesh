@@ -439,6 +439,12 @@ def scan_kubernetes(document):
                 validate_user_id(security)
                 if security.get("privileged") is True:
                     add("HIGH", target, "Container is privileged.")
+                proc_mount = security.get("procMount")
+                if proc_mount is not None and (not isinstance(proc_mount, str)
+                                               or proc_mount not in {"Default", "Unmasked"}):
+                    raise ValueError("Container procMount must be Default or Unmasked")
+                if proc_mount == "Unmasked":
+                    add("HIGH", target, "Container uses an unmasked /proc mount; review host process exposure.")
                 if security.get("allowPrivilegeEscalation") is not False:
                     add("HIGH", target, "Container does not explicitly disable privilege escalation.")
                 if security.get("runAsNonRoot", pod_security.get("runAsNonRoot")) is not True:
