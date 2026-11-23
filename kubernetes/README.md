@@ -285,8 +285,13 @@ report, including in init and ephemeral containers. Missing/null values and
 empty objects retain the existing missing-`ALL` warning. The `add` and `drop`
 fields still require lists of strings; this does not validate capability names.
 
+`shareProcessNamespace: true` produces a MEDIUM pod finding because containers
+can inspect processes in their sibling containers. It does not imply host
+process access; `hostPID` is checked separately as HIGH.
+
 Security flags must be JSON booleans when non-null: pod `hostNetwork`, `hostPID`,
-`hostIPC`, `automountServiceAccountToken`; pod/container `runAsNonRoot`; and
+`hostIPC`, `shareProcessNamespace`, `automountServiceAccountToken`;
+pod/container `runAsNonRoot`; and
 container `privileged`, `allowPrivilegeEscalation`, `readOnlyRootFilesystem`.
 Strings (including `"true"`/`"false"`), numbers, arrays, and objects cause input
 error 2 with no report. All container groups are checked, and invalid pod values

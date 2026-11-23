@@ -392,11 +392,13 @@ def scan_kubernetes(document):
         def add(severity, target, message):
             findings.append((severity, target, message))
 
-        validate_boolean_fields(spec, ["hostNetwork", "hostPID", "hostIPC",
+        validate_boolean_fields(spec, ["hostNetwork", "hostPID", "hostIPC", "shareProcessNamespace",
                                        "automountServiceAccountToken"])
         for field in ["hostNetwork", "hostPID", "hostIPC"]:
             if spec.get(field) is True:
                 add("HIGH", address, f"Pod enables {field}.")
+        if spec.get("shareProcessNamespace") is True:
+            add("MEDIUM", address, "Pod shares a process namespace; review cross-container process visibility.")
         for volume in spec.get("volumes") or []:
             if "hostPath" in volume:
                 add("HIGH", address, "Pod mounts a hostPath volume.")
