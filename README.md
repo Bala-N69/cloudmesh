@@ -121,6 +121,7 @@ numeric validation.
 - Cloud SQL instances that permit public IPv4 addresses
 - Cloud SQL authorized networks that cover all IPv4 addresses, even across multiple CIDRs
 - Cloud SQL instances with explicitly disabled automated backups
+- Cloud SQL instances with explicitly disabled API-level deletion protection
 - Public Google Cloud Storage IAM access
 - Cloud Storage buckets without uniform bucket-level access
 - Service accounts assigned broad project roles such as Owner or Editor

@@ -229,6 +229,7 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
             public_ipv4 = False
             unrestricted_ipv4 = False
             for setting in settings:
+                validate_boolean_fields(setting, ["deletion_protection_enabled"])
                 for backup in object_list(setting.get("backup_configuration"), "Cloud SQL backup_configuration"):
                     validate_boolean_fields(backup, ["enabled"])
                 for configuration in object_list(setting.get("ip_configuration"), "Cloud SQL ip_configuration"):
@@ -245,6 +246,9 @@ def scan_plan(plan: dict) -> list[tuple[str, str, str]]:
                 findings.append(
                     ("MEDIUM", address, "Cloud SQL automated backups are explicitly disabled; review recovery coverage.")
                 )
+            if any(setting.get("deletion_protection_enabled") is False for setting in settings):
+                findings.append(("MEDIUM", address,
+                                 "Cloud SQL instance deletion protection is explicitly disabled; review deletion risk."))
             if public_ipv4:
                 findings.append(
                     ("HIGH", address, "Cloud SQL instance permits a public IPv4 address.")
