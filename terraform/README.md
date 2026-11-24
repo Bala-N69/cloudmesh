@@ -34,7 +34,18 @@ This deliberately exits 1. In GitHub Actions the safe example must exit 0
 and the risky example must exit exactly 1; a scanner error must fail the job.
 The automated tests check JSON contents and both severity thresholds as well.
 
-## Cloud SQL automated backup review
+## Cloud SQL recovery and deletion-protection review
+
+The scanner also reports one MEDIUM finding when
+`settings[].deletion_protection_enabled` is explicitly `false`. This is the
+Cloud SQL API-level deletion protection setting, distinct from Terraform's
+top-level `deletion_protection` flag. Missing or null values are unknown, and
+malformed non-boolean values fail input validation. The finding identifies a
+planned setting; it does not establish whether an instance can currently be
+deleted or whether other safeguards exist. It is independent of backup and
+resource-deletion findings.
+
+Reference: [Google provider Cloud SQL deletion protection](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/sql_database_instance).
 
 To try the authorized-network check locally:
 
