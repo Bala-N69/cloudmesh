@@ -266,11 +266,18 @@ values, arrays, and objects produce input error 2. Numeric `0` remains a HIGH
 root-user finding. A valid container UID overrides the pod UID; all explicit
 values are type-checked even when overridden. This does not inspect image users.
 
+`runAsGroup: 0` produces a MEDIUM finding for affected containers,
+including inherited pod values and init or ephemeral containers. A container's
+nonzero group overrides the pod group. Malformed explicit group IDs fail input
+validation. Missing group IDs are not flagged: this rule does not resolve image
+defaults, implicit group membership, or file permissions. See the
+[Kubernetes security-context guide](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
+
 HIGH findings cover host network/PID/IPC access, hostPath volumes, hostPort bindings, privileged
 containers, privilege escalation not explicitly disabled, missing/false
 runAsNonRoot, and explicit root UID 0. MEDIUM findings cover token mounting not
 explicitly disabled in the pod, writable container roots, missing ALL capability
-drop, added capabilities, and missing/unconfined seccomp profiles.
+drop, added capabilities, explicit root GID 0, and missing/unconfined seccomp profiles.
 
 Pod and container `securityContext` values must be JSON objects when non-null.
 Arrays (including empty arrays), booleans, numbers, and strings cause input

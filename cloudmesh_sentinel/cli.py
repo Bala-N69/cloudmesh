@@ -323,9 +323,10 @@ def validate_boolean_fields(context, fields):
 
 
 def validate_user_id(context):
-    value = context.get("runAsUser")
-    if value is not None and (type(value) is not int or value < 0):
-        raise ValueError("runAsUser must be a non-negative integer")
+    for field in ("runAsUser", "runAsGroup"):
+        value = context.get(field)
+        if value is not None and (type(value) is not int or value < 0):
+            raise ValueError(f"{field} must be a non-negative integer")
 
 
 def scan_kubernetes(document):
@@ -457,6 +458,8 @@ def scan_kubernetes(document):
                     add("HIGH", target, "Container does not enforce runAsNonRoot.")
                 if security.get("runAsUser", pod_security.get("runAsUser")) == 0:
                     add("HIGH", target, "Container explicitly selects root UID 0.")
+                if security.get("runAsGroup", pod_security.get("runAsGroup")) == 0:
+                    add("MEDIUM", target, "Container explicitly selects root GID 0; review group-owned file access.")
                 if security.get("readOnlyRootFilesystem") is not True:
                     add("MEDIUM", target, "Container root filesystem is not explicitly read-only.")
                 capabilities = security.get("capabilities")
