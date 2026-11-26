@@ -263,13 +263,15 @@ checks apply to regular, init, and ephemeral containers.
 Explicit non-null `runAsUser` values at pod or container level must be
 non-negative integers. Strings such as `"0"`, booleans, fractions, negative
 values, arrays, and objects produce input error 2. Numeric `0` remains a HIGH
-root-user finding. A valid container UID overrides the pod UID; all explicit
-values are type-checked even when overridden. This does not inspect image users.
+root-user finding. A non-null container UID overrides the pod UID; `null`
+inherits the pod UID. All explicit values are type-checked even when overridden.
+This does not inspect image users.
 
 `runAsGroup: 0` produces a MEDIUM finding for affected containers,
 including inherited pod values and init or ephemeral containers. A container's
-nonzero group overrides the pod group. Malformed explicit group IDs fail input
-validation. Missing group IDs are not flagged: this rule does not resolve image
+nonzero group overrides the pod group, while `null` inherits it. Malformed
+explicit group IDs fail input validation. Missing group IDs are not flagged:
+this rule does not resolve image
 defaults, implicit group membership, or file permissions. See the
 [Kubernetes security-context guide](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
 
