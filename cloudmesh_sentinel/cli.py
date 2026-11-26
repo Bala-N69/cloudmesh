@@ -456,9 +456,15 @@ def scan_kubernetes(document):
                     add("HIGH", target, "Container does not explicitly disable privilege escalation.")
                 if security.get("runAsNonRoot", pod_security.get("runAsNonRoot")) is not True:
                     add("HIGH", target, "Container does not enforce runAsNonRoot.")
-                if security.get("runAsUser", pod_security.get("runAsUser")) == 0:
+                run_as_user = security.get("runAsUser")
+                if run_as_user is None:
+                    run_as_user = pod_security.get("runAsUser")
+                if run_as_user == 0:
                     add("HIGH", target, "Container explicitly selects root UID 0.")
-                if security.get("runAsGroup", pod_security.get("runAsGroup")) == 0:
+                run_as_group = security.get("runAsGroup")
+                if run_as_group is None:
+                    run_as_group = pod_security.get("runAsGroup")
+                if run_as_group == 0:
                     add("MEDIUM", target, "Container explicitly selects root GID 0; review group-owned file access.")
                 if security.get("readOnlyRootFilesystem") is not True:
                     add("MEDIUM", target, "Container root filesystem is not explicitly read-only.")
